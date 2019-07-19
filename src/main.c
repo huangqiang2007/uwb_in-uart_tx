@@ -11,10 +11,11 @@
 #include "mainctrl.h"
 #include "uartdrv.h"
 #include "Typedefs.h"
+#include "libdw1000.h"
 
 extern volatile int8_t g_slaveWkup;
 
-void Clock_config(void)
+void clockConfig(void)
 {
 	SystemCoreClockUpdate();
 
@@ -42,15 +43,20 @@ void Clock_config(void)
 
 int main(void)
 {
-	g_slaveWkup = false;
-
-	/* Chip errata */
+	/*
+	 * Chip errata
+	 * */
 	CHIP_Init();
+
+	/*
+	 * global var init
+	 * */
+	globalInit();
 
 	/*
 	 * config needed clock
 	 * */
-	Clock_config();
+	clockConfig();
 
 	/*
 	 * RS422 Uart init for delivering converted data
@@ -69,17 +75,18 @@ int main(void)
 	//DMAConfig();
 
 	/*
-	 * DW100 wireless device init, to do.
+	 * DW100 wireless device init
 	 * */
+	dwDeviceInit(&g_dwDev);
 
   	UDELAY_Calibrate();
   	Delay_ms(500);
 
 	while (1) {
 		if (!g_slaveWkup)
-			WakeupSlave();
+			WakeupSlave(&g_dwDev);
 		else
-			RecvFromSlave();
+			RecvFromSlave(&g_dwDev);
 
 		Delay_ms(2);
 	}

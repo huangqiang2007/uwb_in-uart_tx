@@ -1,7 +1,10 @@
-#include <stdint.h>
-#include <stdlib.h>
 #ifndef INLCUDE_MAINCTRL_H_
 #define INLCUDE_MAINCTRL_H_
+
+#include <stdint.h>
+#include <stdlib.h>
+#include "libdw1000Types.h"
+
 
 #define SLAVE_NUMS 4
 
@@ -79,14 +82,16 @@ struct RS422DataFrame {
 	uint8_t crc1; // crc[15:8]
 };
 
-struct MainCtrlFrame g_mainCtrlFr;
+struct MainCtrlFrame g_mainCtrlFr, g_recvSlaveFr;
 struct RS422DataFrame g_RS422DataFr;
 struct BackTokenFrame g_backTokenFr;
 
 volatile int8_t g_slaveWkup;
+volatile bool g_dataRecvDone;
 
+extern void globalInit(void);
 extern uint16_t CalFrameCRC(uint8_t data[], int len);
-extern void WakeupSlave(void);
-extern void RecvFromSlave(void);
+extern void WakeupSlave(dwDevice_t *dev);
+extern void RecvFromSlave(dwDevice_t *dev);
 
 #endif

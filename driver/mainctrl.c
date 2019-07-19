@@ -1,15 +1,25 @@
+#include <stdbool.h>
+#include <string.h>
 #include "em_usart.h"
 #include "em_cmu.h"
 #include "em_gpio.h"
 #include "timer.h"
 #include "uartdrv.h"
 #include "mainctrl.h"
-#include <stdbool.h>
-#include <string.h>
+#include "libdw1000.h"
+#include "libdw1000Types.h"
 
 volatile uint8_t g_slaveStatus = 0;
 
 extern volatile uint32_t g_Ticks;
+
+void globalInit(void)
+{
+	memset((void *)&g_mainCtrlFr, 0x00, sizeof(g_mainCtrlFr));
+	memset((void *)&g_recvSlaveFr, 0x00, sizeof(g_recvSlaveFr));
+	g_dataRecvDone = false;
+	g_slaveWkup = false;
+}
 
 /*
  * all 5 bytes data add each other and get the 16bits sum.
@@ -43,6 +53,20 @@ void InitFrame(struct MainCtrlFrame *mainCtrlFr, uint8_t src, uint8_t slave,
 	mainCtrlFr->crc1 = (data_crc >> 8) & 0xff;
 }
 
+int checkSlaveWkup(struct MainCtrlFrame *mainCtrlFr, struct MainCtrlFrame *recvSlaveFr)
+{
+	/*
+	 * send owner, slave ID and back token, all match, then it indicates
+	 * slave is waken up.
+	 * */
+	if (((recvSlaveFr->frameCtrl & 0xc0) == (mainCtrlFr->frameCtrl & 0xc0))
+		&& ((recvSlaveFr->frameCtrl & 0x0f) == (mainCtrlFr->frameCtrl & 0x0f))
+		&& (recvSlaveFr->frameType == ENUM_SAMPLE_SET_TOKEN))
+		return 0;
+	else
+		return -1;
+}
+
 /*
  * send a frame to slave and poll the corresponding back token.
  * @src: frame source, main node, manual node or slave node
@@ -51,7 +75,7 @@ void InitFrame(struct MainCtrlFrame *mainCtrlFr, uint8_t src, uint8_t slave,
  *
  * @ret: -1: talk timeout; 0: talk successfully.
  * */
-uint8_t TalktoSlave(uint8_t src, uint8_t slave, uint8_t type, uint8_t data[])
+uint8_t TalktoSlave(dwDevice_t *dev, uint8_t src, uint8_t slave, uint8_t type, uint8_t data[])
 {
 	int8_t ret = -1;
 
@@ -65,9 +89,14 @@ uint8_t TalktoSlave(uint8_t src, uint8_t slave, uint8_t type, uint8_t data[])
 	/*
 	 * to do:  wireless send logic
 	 * */
+	g_dataRecvDone = false;
+	dwSendData(&g_dwDev, (uint8_t *)&g_mainCtrlFr, sizeof(g_mainCtrlFr));
 
 	while (g_Ticks < g_cmd_feedback_timeout) {
-
+		if (g_dataRecvDone == true) {
+			ret = checkSlaveWkup(&g_mainCtrlFr, &g_recvSlaveFr);
+			break;
+		}
 	}
 
 	return ret;
@@ -76,7 +105,7 @@ uint8_t TalktoSlave(uint8_t src, uint8_t slave, uint8_t type, uint8_t data[])
 /*
  * try to wake up all slave, woken slaves are marked in 'g_slaveStatus' var.
  * */
-void WakeupSlave(void)
+void WakeupSlave(dwDevice_t *dev)
 {
 	int i = 0, ret = -1;
 	uint8_t fr_data[FRAME_DATA_LEN];
@@ -89,7 +118,7 @@ void WakeupSlave(void)
 	 * */
 	while (g_Ticks < g_wakup_timeout) {
 		for (i = 0; i < SLAVE_NUMS; i++) {
-			ret = TalktoSlave(MAIN_NODE, i, ENUM_SAMPLE_SET, fr_data);
+			ret = TalktoSlave(dev, MAIN_NODE, i, ENUM_SAMPLE_SET, fr_data);
 			if (ret == 0)
 				g_slaveStatus |= (1 << i);
 		}
@@ -111,7 +140,7 @@ void WakeupSlave(void)
 /*
  * scan all slaves and fetch sample data.
  * */
-void RecvFromSlave(void)
+void RecvFromSlave(dwDevice_t *dev)
 {
 	uint16_t crc_sum = 0;
 	int i = 0, ret = -1;
@@ -123,18 +152,18 @@ void RecvFromSlave(void)
 	g_RS422DataFr.len = 0;
 
 	/*
-	 * scan each slave and receive sameple data
+	 * scan each slave and receive sample data
 	 * */
 	for (i = 0; i < SLAVE_NUMS; i++) {
 		if ((g_slaveStatus & (1 << i)) == (1 << i)) {
-			ret = TalktoSlave(MAIN_NODE, i, ENUM_SAMPLE_DATA, fr_data);
+			ret = TalktoSlave(dev, MAIN_NODE, i, ENUM_SAMPLE_DATA, fr_data);
 			if (ret == 0) {
-				crc_sum = CalFrameCRC(g_mainCtrlFr.data, FRAME_DATA_LEN);
+				crc_sum = CalFrameCRC(g_recvSlaveFr.data, FRAME_DATA_LEN);
 				if (g_mainCtrlFr.head0 != 0x55 || g_mainCtrlFr.head1 != 0xaa
 					|| g_mainCtrlFr.crc0 != (crc_sum & 0xff) || g_mainCtrlFr.crc1 != ((crc_sum >> 8) & 0xff))
 					continue;
 
-				memcpy(&g_RS422DataFr.packets[g_RS422DataFr.len], &g_mainCtrlFr, sizeof(g_mainCtrlFr));
+				memcpy(&g_RS422DataFr.packets[g_RS422DataFr.len], &g_recvSlaveFr, sizeof(g_recvSlaveFr));
 				g_RS422DataFr.len++;
 			} else {
 				g_slaveStatus &= ~(1 << i);

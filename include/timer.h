@@ -29,7 +29,7 @@ volatile uint32_t g_idle_judge;
 
 void setupTimer0(void);
 void setupTimer1(void);
-void Delay_ms(uint32_t ms);
-void Delay_us(uint32_t us);
+extern void Delay_ms(uint32_t ms);
+extern void Delay_us(uint32_t us);
 
 #endif /* INLCUDE_TIMER_H_ */
