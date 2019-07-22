@@ -83,6 +83,7 @@ struct RS422DataFrame {
 };
 
 struct MainCtrlFrame g_mainCtrlFr, g_recvSlaveFr;
+dwMacFrame_t g_dwMacFrameSend, g_dwMacFrameRecv;
 struct RS422DataFrame g_RS422DataFr;
 struct BackTokenFrame g_backTokenFr;
 
