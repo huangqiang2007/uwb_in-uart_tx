@@ -10,6 +10,7 @@
 #include "main.h"
 #include "mainctrl.h"
 #include "uartdrv.h"
+#include "spidrv.h"
 #include "Typedefs.h"
 #include "libdw1000.h"
 
@@ -66,7 +67,7 @@ int main(void)
 	/*
 	 * SPI master config
 	 * */
-	SPIConfig();
+	SPIConfig(SPI_CLK);
 
 	/*
 	 * config one DMA channel for transferring ADC sample results

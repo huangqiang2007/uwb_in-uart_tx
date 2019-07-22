@@ -20,7 +20,6 @@ volatile uint32_t g_Ticks = 0;
  * @brief TIMER0_IRQHandler
  * Interrupt Service Routine TIMER0 Interrupt Line
  *****************************************************************************/
-extern uint32_t sleeptime;
 void TIMER0_IRQHandler(void)
 {
 	/* Clear flag for TIMER0 overflow interrupt */

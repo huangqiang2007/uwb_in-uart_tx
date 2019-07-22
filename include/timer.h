@@ -1,7 +1,8 @@
+#ifndef __INLCUDE_TIMER_H_
+#define __INLCUDE_TIMER_H_
+
 #include <stdint.h>
 #include <stdlib.h>
-#ifndef INLCUDE_TIMER_H_
-#define INLCUDE_TIMER_H_
 
 /*
  * CMD feedback timeout judge

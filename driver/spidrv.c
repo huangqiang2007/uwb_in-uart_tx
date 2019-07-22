@@ -4,8 +4,6 @@
 #include "spidrv.h"
 #include <stdbool.h>
 
-#define SPI_CLK 200000
-
 /*
  * @brief
  *   Configure SPI master

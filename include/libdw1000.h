@@ -175,7 +175,7 @@ float dwGetFirstPathPower(dwDevice_t* dev);
 float dwGetReceivePower(dwDevice_t* dev);
 void dwEnableMode(dwDevice_t *dev);
 void dwTune(dwDevice_t *dev);
-void dwHandleInterrupt(dwDevice_t *dev);
+extern void dwHandleInterrupt(dwDevice_t *dev);
 void dwSetAfterRxAutoSleep(dwDevice_t *dev);
 void dwNotSetAfterRxAutoSleep(dwDevice_t *dev);
 void dwSetPreambleDectTimeOut(dwDevice_t *dev, uint16_t timeout_PAC_Size);
