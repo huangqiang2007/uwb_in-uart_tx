@@ -23,7 +23,7 @@
 #include "em_cmu.h"
 #include "em_gpio.h"
 #include "spidrv.h"
-#include "time.h"
+#include "timer.h"
 #include "mainctrl.h"
 #include "libdw1000.h"
 
@@ -1487,14 +1487,6 @@ void dwSetAckAndRespTime(dwDevice_t *dev, uint32_t ack_time_us, uint32_t resp_ti
 	uint32_t ack_resp_tbuf;
 	ack_resp_tbuf = (ack_time_us<<24) + resp_time_us;
 	dwSpiWrite32(dev, ACK_RESP_T, ACK_RESP_T_SUB, ack_resp_tbuf);
-}
-
-/***************************************************************************//**
- * @brief udelay
-*******************************************************************************/
-void delayus(unsigned long usecs)
-{
-	usleep(usecs);
 }
 
 /*
