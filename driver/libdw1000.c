@@ -67,9 +67,9 @@ void dwInit(dwDevice_t* dev, uint16_t PanID, uint16_t sourceAddr)
 	/* Device default state */
 	//memcpy(dev->networkAndAddress, 0x00010001, LEN_PANADR); //PAN ID: 0001, Short Address:0001
 	dev->networkAndAddress[0] = PanID;
-	dev->networkAndAddress[1] = PanID>>4;
+	dev->networkAndAddress[1] = PanID>>8;
 	dev->networkAndAddress[2] = sourceAddr;
-	dev->networkAndAddress[3] = sourceAddr>>4;
+	dev->networkAndAddress[3] = sourceAddr>>8;
 	dev->extendedFrameLength = FRAME_LENGTH_NORMAL;
 	dev->pacSize = PAC_SIZE_8;
 	dev->pulseFrequency = TX_PULSE_FREQ_16MHZ;

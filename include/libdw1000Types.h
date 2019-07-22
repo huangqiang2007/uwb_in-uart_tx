@@ -98,7 +98,7 @@ typedef struct dwFrame_s {
 	uint16_t SourcePanID;
 	uint16_t SourceAddr;
 	uint8_t  Payload[113];
-} dwMacFrame_t;
+} __attribute__((packed)) dwMacFrame_t;
 
 #define dwSpiSpeedLow    2000000
 #define dwSpiSpeedHigh	 20000000
