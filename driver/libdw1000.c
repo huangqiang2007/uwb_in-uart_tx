@@ -94,7 +94,6 @@ void dwInit(dwDevice_t* dev, uint16_t PanID, uint16_t sourceAddr)
 	 * data receive callback
 	 * */
 	dev->handleReceived = dwRecvData;
-
 }
 
 void dwSetUserdata(dwDevice_t* dev, void* userdata)

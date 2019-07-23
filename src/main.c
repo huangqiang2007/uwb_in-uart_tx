@@ -84,10 +84,24 @@ int main(void)
   	Delay_ms(500);
 
 	while (1) {
-		if (!g_slaveWkup)
-			WakeupSlave(&g_dwDev);
-		else
-			RecvFromSlave(&g_dwDev);
+		switch(g_cur_mode)
+		{
+			case MAIN_WKUPMODE:
+				WakeupSlave(&g_dwDev);
+				break;
+
+			case MAIN_SAMPLEMODE:
+				RecvFromSlave(&g_dwDev);
+				break;
+
+			case MAIN_IDLEMODE:
+				g_cur_mode = MAIN_WKUPMODE;
+				break;
+
+			default:
+				g_cur_mode = MAIN_WKUPMODE;
+				break;
+		}
 
 		Delay_ms(2);
 	}

@@ -22,6 +22,7 @@ void globalInit(void)
 	memset((void *)&g_dwMacFrameRecv, 0x00, sizeof(g_dwMacFrameRecv));
 	g_dataRecvDone = false;
 	g_slaveWkup = false;
+	g_cur_mode = MAIN_IDLEMODE;
 }
 
 /*
@@ -140,8 +141,10 @@ void WakeupSlave(dwDevice_t *dev)
 	/*
 	 * if it exists woken slaves, it can begin to fetch data from slaves.
 	 * */
-	if ((g_slaveStatus & SLAVE_WKUP_MSK) > 0)
+	if ((g_slaveStatus & SLAVE_WKUP_MSK) > 0) {
 		g_slaveWkup = true;
+		g_cur_mode = MAIN_SAMPLEMODE;
+	}
 }
 
 /*
@@ -178,8 +181,10 @@ void RecvFromSlave(dwDevice_t *dev)
 				/*
 				 * if all slave is offline, reset flag 'g_slaveWkup' to begin wakeup logic.
 				 * */
-				if ((g_slaveStatus & SLAVE_WKUP_MSK) == 0)
+				if ((g_slaveStatus & SLAVE_WKUP_MSK) == 0) {
 					g_slaveWkup = false;
+					g_cur_mode = MAIN_IDLEMODE;
+				}
 			}
 		}
 	}

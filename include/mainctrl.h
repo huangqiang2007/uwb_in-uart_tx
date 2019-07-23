@@ -8,6 +8,8 @@
 
 #define SLAVE_NUMS 4
 
+enum {MAIN_IDLEMODE=0, MAIN_WKUPMODE, MAIN_SAMPLEMODE};
+
 /*
  * slave waken up flag
  * */
@@ -87,6 +89,7 @@ dwMacFrame_t g_dwMacFrameSend, g_dwMacFrameRecv;
 struct RS422DataFrame g_RS422DataFr;
 struct BackTokenFrame g_backTokenFr;
 
+volatile int8_t g_cur_mode;
 volatile int8_t g_slaveWkup;
 volatile bool g_dataRecvDone;
 
