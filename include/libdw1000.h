@@ -57,6 +57,8 @@ void dwSetUserdata(dwDevice_t* dev, void* userdata);
  */
 void* dwGetUserdata(dwDevice_t* dev);
 
+void dwReadID(dwDevice_t *dev);
+
 /**
  * Setup the DW1000
  */

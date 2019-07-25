@@ -25,6 +25,17 @@ void globalInit(void)
 	g_cur_mode = MAIN_IDLEMODE;
 }
 
+void powerADandUWB(uint8_t master)
+{
+	if (master == 1) {
+		GPIO_PinModeSet(gpioPortA, 1, gpioModePushPull, 1);
+		GPIO_PinModeSet(gpioPortA, 0, gpioModePushPull, 0);
+	} else {
+		GPIO_PinModeSet(gpioPortA, 1, gpioModePushPull, 1);
+		GPIO_PinModeSet(gpioPortA, 0, gpioModePushPull, 1);
+	}
+}
+
 /*
  * all 5 bytes data add each other and get the 16bits sum.
  * low 8bits store into crc0, high 8bits store into crc1.

@@ -106,6 +106,14 @@ void* dwGetUserdata(dwDevice_t* dev)
 	return dev->userdata;
 }
 
+void dwReadID(dwDevice_t *dev)
+{
+	uint8_t deviceID[5] = {0};
+
+	while (true)
+		dwSpiRead(dev, 0x00, 0x00, deviceID, 4);
+}
+
 int dwConfigure(dwDevice_t* dev)
 {
 	dwEnableClock(dev, dwClockAuto); //set dw1000 digital clocking block
