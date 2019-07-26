@@ -67,6 +67,7 @@ int SPISendNbytes(uint8_t *str, int n)
 uint8_t SPIRecvByte(void)
 {
 	return USART_Rx(usart_spi);
+	//return (uint8_t)usart_spi->RXDATA;
 }
 
 /*
@@ -82,4 +83,22 @@ uint8_t SPIRecvNBytes(uint8_t dst[], int n)
 	}
 
 	return i;
+}
+
+uint8_t USARTSpiTransfer(USART_TypeDef *usart, uint8_t data)
+{
+	uint32_t status = 0;
+
+	while (!(usart->STATUS & USART_STATUS_TXBL)) {
+	}
+	usart->TXDATA = (uint32_t)data;
+	while (!(usart->STATUS & USART_STATUS_TXC)) {
+	}
+
+	status = usart->STATUS;
+	while (!(status & 0x80)) {
+		status = usart->STATUS;
+	}
+
+	return (uint8_t)usart->RXDATA;
 }
