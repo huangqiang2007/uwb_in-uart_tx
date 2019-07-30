@@ -100,8 +100,8 @@ typedef struct dwFrame_s {
 	uint8_t  Payload[113];
 } __attribute__((packed)) dwMacFrame_t;
 
-#define dwSpiSpeedLow    2000000
-#define dwSpiSpeedHigh	 20000000
+#define dwSpiSpeedLow    1000000
+#define dwSpiSpeedHigh	 10000000
 
 typedef enum {dwClockAuto = 0x00, dwClockXti = 0x01, dwClockPll = 0x02} dwClock_t;
 

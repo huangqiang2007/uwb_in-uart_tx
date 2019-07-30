@@ -66,10 +66,10 @@ void dwInit(dwDevice_t* dev, uint16_t PanID, uint16_t sourceAddr)
 
 	/* Device default state */
 	//memcpy(dev->networkAndAddress, 0x00010001, LEN_PANADR); //PAN ID: 0001, Short Address:0001
-	dev->networkAndAddress[0] = PanID;
-	dev->networkAndAddress[1] = PanID>>8;
-	dev->networkAndAddress[2] = sourceAddr;
-	dev->networkAndAddress[3] = sourceAddr>>8;
+	dev->networkAndAddress[0] = sourceAddr;
+	dev->networkAndAddress[1] = sourceAddr>>8;
+	dev->networkAndAddress[2] = PanID;
+	dev->networkAndAddress[3] = PanID>>8;
 	dev->extendedFrameLength = FRAME_LENGTH_NORMAL;
 	dev->pacSize = PAC_SIZE_8;
 	dev->pulseFrequency = TX_PULSE_FREQ_16MHZ;
@@ -220,15 +220,18 @@ void dwEnableClock(dwDevice_t* dev, dwClock_t clock) {
 	memset(pmscctrl0, 0, LEN_PMSC_CTRL0);
 	dwSpiRead(dev, PMSC, PMSC_CTRL0_SUB, pmscctrl0, LEN_PMSC_CTRL0);
 	if(clock == dwClockAuto) {
-		SPIConfig(dwSpiSpeedLow);
+		USART1->CMD = usartDisable;
+		initUSART1(dwSpiSpeedLow);
 		pmscctrl0[0] = dwClockAuto;
 		pmscctrl0[1] &= 0xFE;
 	} else if(clock == dwClockXti) {
-		SPIConfig(dwSpiSpeedLow);
+		USART1->CMD = usartDisable;
+		initUSART1(dwSpiSpeedLow);
 		pmscctrl0[0] &= 0xFC;
 		pmscctrl0[0] |= dwClockXti;
 	} else if(clock == dwClockPll) {
-		SPIConfig(dwSpiSpeedHigh);
+		USART1->CMD = usartDisable;
+		initUSART1(dwSpiSpeedHigh);
 		pmscctrl0[0] &= 0xFC;
 		pmscctrl0[0] |= dwClockPll;
 	} else {

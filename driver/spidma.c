@@ -167,7 +167,7 @@ void initReceiveDma(void)
 /**************************************************************************//**
  * @brief Initialize USART1
  *****************************************************************************/
-void initUSART1 (void)
+void initUSART1 (int SpiClk)
 {
 	CMU_ClockEnable(cmuClock_GPIO, true);
 	CMU_ClockEnable(cmuClock_USART1, true);
@@ -181,7 +181,7 @@ void initUSART1 (void)
 	// Start with default config, then modify as necessary
 	USART_InitSync_TypeDef config = USART_INITSYNC_DEFAULT;
 	//config.master       = true;            // master mode
-	config.baudrate     = 1000000;         // CLK freq is 1 MHz
+	config.baudrate     = SpiClk;         // CLK freq is 1 MHz
 	config.autoCsEnable = true;            // CS pin controlled by hardware, not firmware
 	config.clockMode    = usartClockMode0; // clock idle low, sample on rising/first edge
 	config.msbf         = true;            // send MSB first
@@ -236,10 +236,10 @@ void spiTransferForWrite(SPITransDes_t *spiTransDes, uint8_t *txbuf, int txlen)
 	while (spiTransDes->sendDone == false);
 }
 
-void SPIDMAInit(void)
+void SPIDMAInit()
 {
 	// Initialize USART1 as SPI slave
-	initUSART1();
+	initUSART1(dwSpiSpeedLow);
 
 	// Initializing the DMA
 	DMA_Init_TypeDef init;
