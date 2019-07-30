@@ -35,13 +35,13 @@
 SL_ALIGN(DMACTRL_ALIGNMENT)
 DMA_DESCRIPTOR_TypeDef dmaControlBlock[DMACTRL_CH_CNT * 2] SL_ATTRIBUTE_ALIGN(DMACTRL_ALIGNMENT);
 
-#define TX_BUFFER_SIZE   10
-#define RX_BUFFER_SIZE   TX_BUFFER_SIZE
-
-uint8_t TxBuffer1[TX_BUFFER_SIZE] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09};
-uint8_t TxBuffer2[TX_BUFFER_SIZE] = {0x04, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09};
-uint8_t TxBuffer3[TX_BUFFER_SIZE] = {0x03, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09};
-uint8_t RxBuffer[RX_BUFFER_SIZE] = {0};
+//#define TX_BUFFER_SIZE   10
+//#define RX_BUFFER_SIZE   TX_BUFFER_SIZE
+//
+//uint8_t TxBuffer1[TX_BUFFER_SIZE] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09};
+//uint8_t TxBuffer2[TX_BUFFER_SIZE] = {0x04, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09};
+//uint8_t TxBuffer3[TX_BUFFER_SIZE] = {0x03, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09};
+//uint8_t RxBuffer[RX_BUFFER_SIZE] = {0};
 
 uint32_t channelNumTX     = 1;
 uint32_t channelNumRX     = 0;
@@ -76,6 +76,7 @@ void refreshTxTransfer(uint32_t channelNum,
 //					(void *) &USART1->TXDATA,  // Destination address to transfer to
 //					(void *) TxBuffer1,         // Source address to transfer from
 //					RX_BUFFER_SIZE - 1);       // Number of DMA transfers minus 1
+	g_spiTransDes.sendDone = true;
 }
 
 /**************************************************************************//**
@@ -101,7 +102,7 @@ void initTransferDma(void)
 	// Channel configuration for TX transmission
 	DMA_CfgChannel_TypeDef channelConfigTX;
 	channelConfigTX.highPri   = false;                // Set high priority for the channel
-	channelConfigTX.enableInt = false;                // Interrupt used to reset the transfer
+	channelConfigTX.enableInt = true;                // Interrupt used to reset the transfer
 	channelConfigTX.select    = DMAREQ_USART1_TXBL;   // Select DMA trigger
 	channelConfigTX.cb        = &callbackTX;  	    // Callback to refresh the DMA transfer
 	DMA_CfgChannel(channelNumTX, &channelConfigTX);
@@ -226,11 +227,11 @@ void spiTransferForWrite(SPITransDes_t *spiTransDes, uint8_t *txbuf, int txlen)
 	memcpy(spiTransDes->txBuf, txbuf, txlen);
 
 	DMA_ActivateBasic(channelNumTX,
-						true,
-						false,
-						(void *) &USART1->TXDATA,  // Destination address to transfer to
-						(void *) spiTransDes->txBuf,         // Source address to transfer from
-						txlen - 1);       // Number of DMA transfers minus 1
+					true,
+					false,
+					(void *) &USART1->TXDATA,  // Destination address to transfer to
+					(void *) spiTransDes->txBuf,         // Source address to transfer from
+					txlen - 1);       // Number of DMA transfers minus 1
 
 	while (spiTransDes->sendDone == false);
 }

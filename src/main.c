@@ -52,14 +52,24 @@ int main(void)
 	// Initialize chip
 	CHIP_Init();
 
+	powerADandUWB(1);
+//	spiDMA_test();
+	globalInit();
+	clockConfig();
 	SPIDMAInit();
+	//uart_test();
+	dwSpiRead(&g_dwDev, PMSC, PMSC_CTRL0_SUB, g_dwDev.networkAndAddress, LEN_PMSC_CTRL0);
+	g_dwDev.networkAndAddress[0]= 01;
+	g_dwDev.networkAndAddress[1]= 02;
+	g_dwDev.networkAndAddress[2]= 03;
+	g_dwDev.networkAndAddress[3]= 04;
 
-	spiTransferForRead(&g_spiTransDes, TxBuffer1, 1, RxBuffer, 4);
-	spiTransferForRead(&g_spiTransDes, TxBuffer2, 1, RxBuffer, 4);
-	spiTransferForRead(&g_spiTransDes, TxBuffer3, 1, RxBuffer, 4);
-	spiTransferForRead(&g_spiTransDes, TxBuffer1, 1, RxBuffer, 4);
-	spiTransferForRead(&g_spiTransDes, TxBuffer2, 1, RxBuffer, 4);
-	spiTransferForRead(&g_spiTransDes, TxBuffer3, 1, RxBuffer, 4);
+	dwWriteNetworkIdAndDeviceAddress(&g_dwDev);
+	memset(g_dwDev.networkAndAddress, 0x00, sizeof(g_dwDev.networkAndAddress));
+	dwReadNetworkIdAndDeviceAddress(&g_dwDev);
+	dwEnableClock(&g_dwDev, dwClockAuto); //set dw1000 digital clocking block
+
+	dwDeviceInit(&g_dwDev);
 
 	// Place breakpoint here and observe RxBuffer
 	// RxBuffer should contain 0xA0, 0xA1, 0xA2, 0xA3, 0xA4, 0xA5, 0xA6, 0xA7, 0xA8, 0xA9

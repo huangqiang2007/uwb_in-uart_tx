@@ -5,7 +5,7 @@
 
 #define SPI_CLK 200000
 
-#define UWB_MAX_SPI_LEN 150
+#define UWB_MAX_SPI_LEN 127
 typedef struct {
 	int txlen;
 	int rxlen;
@@ -25,7 +25,6 @@ extern int SPISendNbytes(uint8_t *str, int n);
 extern uint8_t SPIRecvNBytes(uint8_t dst[], int n);
 extern uint8_t USARTSpiTransfer(USART_TypeDef *usart, uint8_t data);
 
-extern uint8_t TxBuffer1[], TxBuffer2[], TxBuffer3[], RxBuffer[];
 void initTransferDma(void);
 void initReceiveDma(void);
 void spiTransferForRead(SPITransDes_t *spiTransDes, uint8_t *txbuf, int txlen,
