@@ -110,6 +110,11 @@ void setupTimer1(void)
 	TIMER_Init(TIMER1, &timerInit);
 }
 
+void timerInit(void)
+{
+	setupTimer1();
+}
+
 void Delay_us(uint32_t us)
 {
   uint32_t countMax;

@@ -32,5 +32,6 @@ void setupTimer0(void);
 void setupTimer1(void);
 extern void Delay_ms(uint32_t ms);
 extern void Delay_us(uint32_t us);
+extern void timerInit(void);
 
 #endif /* INLCUDE_TIMER_H_ */
