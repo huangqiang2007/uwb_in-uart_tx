@@ -58,15 +58,15 @@ int main(void)
 	clockConfig();
 	SPIDMAInit();
 	//uart_test();
+	dwSpiRead(&g_dwDev, 0x00, 0x00, g_dwDev.networkAndAddress, 4);
+	g_dwDev.networkAndAddress[0]= 01;
+	g_dwDev.networkAndAddress[1]= 02;
+	g_dwDev.networkAndAddress[2]= 03;
+	g_dwDev.networkAndAddress[3]= 04;
 
-//	g_dwDev.networkAndAddress[0]= 01;
-//	g_dwDev.networkAndAddress[1]= 02;
-//	g_dwDev.networkAndAddress[2]= 03;
-//	g_dwDev.networkAndAddress[3]= 04;
-//
-//	dwWriteNetworkIdAndDeviceAddress(&g_dwDev);
-//	memset(g_dwDev.networkAndAddress, 0x00, sizeof(g_dwDev.networkAndAddress));
-//	dwReadNetworkIdAndDeviceAddress(&g_dwDev);
+	dwWriteNetworkIdAndDeviceAddress(&g_dwDev);
+	memset(g_dwDev.networkAndAddress, 0x00, sizeof(g_dwDev.networkAndAddress));
+	dwReadNetworkIdAndDeviceAddress(&g_dwDev);
 
 	dwDeviceInit(&g_dwDev);
   	UDELAY_Calibrate();
@@ -79,6 +79,34 @@ int main(void)
 	}
 }
 #else 1
+
+void spiDMA_test(dwDevice_t *dev)
+{
+	uint8_t buf[4] = {0};
+
+	while(1) {
+		dwSpiRead(dev, 0x00, 0x00, buf, 4);
+		buf[0] = 0x01;
+		buf[1] = 0x02;
+		buf[2] = 0x03;
+		buf[3] = 0x04;
+//		dwSpiWrite(dev, 0x03, 0x00, buf, 4);
+//		buf[0] = 0x05;
+//		buf[1] = 0x06;
+//		buf[2] = 0x07;
+//		buf[3] = 0x08;
+//		dwSpiWrite(dev, 0x03, 0x00, buf, 4);
+//		buf[0] = 9;
+//		buf[1] = 10;
+//		buf[2] = 11;
+//		buf[3] = 12;
+//		dwSpiWrite(dev, 0x03, 0x00, buf, 4);
+		memset(buf, 0x00, 4);
+		Delay_ms(1);
+		dwSpiRead(dev, 0x03, 0x00, buf, 4);
+		dwSpiRead(dev, 0x04, 0x00, buf, 4);
+	}
+}
 int main(void)
 {
 	/*
@@ -92,14 +120,20 @@ int main(void)
 	globalInit();
 
 	/*
+	 * config needed clock
+	 * */
+	clockConfig();
+
+	/*
 	 * power supply for AD and UWB
 	 * */
 	powerADandUWB(1);
 
 	/*
-	 * config needed clock
+	 * Timer init
 	 * */
-	clockConfig();
+	timerInit();
+	Delay_ms(5);
 
 	/*
 	 * RS422 Uart init for delivering converted data
@@ -112,10 +146,7 @@ int main(void)
 	//SPIConfig(SPI_CLK);
 	SPIDMAInit();
 
-	/*
-	 * Timer init
-	 * */
-	timerInit();
+	//spiDMA_test(&g_dwDev);
 
 	/*
 	 * config one DMA channel for transferring ADC sample results

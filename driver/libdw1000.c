@@ -705,7 +705,7 @@ void dwSetSubNodeConfig(dwDevice_t* dev) {
 		dwWaitForResponse(dev,true);
 		//set auto send acknowledgment after receive a frame with a acknowledgment request
 		dwSetAutoAck(dev,true);
-		//set 3us to transmit ACK after receive and 30us to turn on receiver after transmit
+		//set 3us to transmit ACK after receive and 300us to turn on receiver after transmit
 		dwSetAckAndRespTime(dev, 3, 30);
 		//set CRC frame check
 		dwSuppressFrameCheck(dev, false);
@@ -1601,13 +1601,22 @@ void GPIO_ODD_IRQHandler(void)
 }
 
 #define  gpioPortB_11 11
+//void dwGpioInterruptConfig(dwDevice_t *dev)
+//{
+//	CMU_ClockEnable(cmuClock_GPIO, true);
+//	GPIO_PinModeSet(gpioPortB, gpioPortB_11, gpioModeInputPullFilter, 1);
+//	NVIC_ClearPendingIRQ(GPIO_ODD_IRQn);
+//	NVIC_EnableIRQ(GPIO_ODD_IRQn);
+//	GPIO_ExtIntConfig(gpioPortB, gpioPortB_11, gpioPortB_11, false, true, true);
+//}
+
 void dwGpioInterruptConfig(dwDevice_t *dev)
 {
-	CMU_ClockEnable(cmuClock_GPIO, true);
-	GPIO_PinModeSet(gpioPortB, gpioPortB_11, gpioModeInputPullFilter, 1);
-	NVIC_ClearPendingIRQ(GPIO_ODD_IRQn);
-	NVIC_EnableIRQ(GPIO_ODD_IRQn);
-	GPIO_ExtIntConfig(gpioPortB, gpioPortB_11, gpioPortB_11, false, true, true);
+	 CMU_ClockEnable(cmuClock_GPIO, true);
+	 GPIO_PinModeSet(gpioPortB, gpioPortB_11, gpioModeInputPullFilter, 1);
+	 NVIC_ClearPendingIRQ(GPIO_ODD_IRQn);
+	 NVIC_EnableIRQ(GPIO_ODD_IRQn);
+	 GPIO_ExtIntConfig(gpioPortB, gpioPortB_11, gpioPortB_11, true, false, true);
 }
 
 /*
@@ -1622,10 +1631,11 @@ void dwDeviceInit(dwDevice_t *dev)
 
 	dwInit(dev, PAN_ID1, SLAVE_ADDR1);
 	dwConfigure(dev);
-	dwSetSubNodeConfig(dev);
+	dwSetcentreNodeConfig(dev);
 	//dwEnableMode(dev, MODE_SHORTDATA_FAST_LOWPOWER);
 	dwEnableMode(dev);
 	dwCommitConfiguration(dev);
+	//dwGpioInterruptConfig(dev);
 }
 
 /*

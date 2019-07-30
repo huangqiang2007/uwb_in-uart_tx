@@ -47,7 +47,7 @@ void dwSpiRead(dwDevice_t *dev, uint8_t regid, uint32_t address,
                                 void* data, int length) {
   uint8_t header[Header_Size];
   int headerLength;
-  uint8_t dataRead[127+Header_Size];
+
 
   header[0] = regid & 0x3f; //set read mode, set sub-index = 0 by default, set register file ID to header buffer 0
   headerLength = 1; //set header length = 1 by default,

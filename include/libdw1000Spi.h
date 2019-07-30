@@ -30,7 +30,7 @@
 
 #define TX_Data_Size 128
 #define Header_Size 3
-
+uint8_t dataRead[127+Header_Size];
 /**
  * Read from the dw1000 SPI interface
  */
