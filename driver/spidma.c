@@ -54,13 +54,6 @@ void refreshRxTransfer(uint32_t channelNum,
                      void *userPtr)
 {
 	g_spiTransDes.recvDone = true;
-
-//	DMA_ActivateBasic(channelNum,
-//					isPrimaryDescriptor,
-//					isUseBurst,
-//					(void *) RxBuffer,         // Destination address to transfer to
-//					(void *) &USART1->RXDATA,  // Source address to transfer from
-//					RX_BUFFER_SIZE - 1);       // Number of DMA transfers minus 1
 }
 
 /**************************************************************************//**
@@ -70,12 +63,6 @@ void refreshTxTransfer(uint32_t channelNum,
                      bool isPrimaryDescriptor,
                      void *userPtr)
 {
-//	DMA_ActivateBasic(channelNum,
-//					isPrimaryDescriptor,
-//					isUseBurst,
-//					(void *) &USART1->TXDATA,  // Destination address to transfer to
-//					(void *) TxBuffer1,         // Source address to transfer from
-//					RX_BUFFER_SIZE - 1);       // Number of DMA transfers minus 1
 	g_spiTransDes.sendDone = true;
 }
 
@@ -115,13 +102,6 @@ void initTransferDma(void)
 	descriptorConfigTX.arbRate = dmaArbitrate1;   // Arbitrate after every DMA transfer
 	descriptorConfigTX.hprot   = 0;               // Access level/protection not an issue
 	DMA_CfgDescr(channelNumTX, true, &descriptorConfigTX);
-
-//	DMA_ActivateBasic(channelNumTX,
-//					true,
-//					false,
-//					(void *) &USART1->TXDATA,  // Destination address to transfer to
-//					(void *) txbuf,         // Source address to transfer from
-//					txlen - 1);       // Number of DMA transfers minus 1
 }
 
 /**************************************************************************//**
@@ -154,14 +134,6 @@ void initReceiveDma(void)
 	descriptorConfigRX.arbRate = dmaArbitrate1;   // Arbitrate after every DMA transfer
 	descriptorConfigRX.hprot   = 0;               // Access level/protection not an issue
 	DMA_CfgDescr(channelNumRX, true, &descriptorConfigRX);
-
-	// Activate basic DMA cycle (used for memory-peripheral transfers)
-//	DMA_ActivateBasic(channelNumRX,
-//					true,
-//					false,
-//					(void *) rxbuf,         // Destination address to transfer to
-//					(void *) &USART1->RXDATA,  // Source address to transfer from
-//					rxlen - 1);       // Number of DMA transfers minus 1
 }
 
 /**************************************************************************//**
@@ -193,13 +165,14 @@ void initUSART1 (int SpiClk)
 		| USART_ROUTE_RXPEN | USART_ROUTE_LOCATION_LOC0;
 
 	// Enable USART1
-	//USART_Enable(USART1, usartEnable);
 	USART1->CMD |= (usartEnable | USART_CMD_MASTEREN);
 }
 
 void spiTransferForRead(SPITransDes_t *spiTransDes, uint8_t *txbuf, int txlen,
 		uint8_t *rxbuf, int rxlen)
 {
+	uint32_t status = 0, status_txc = 0x20;
+
 	memset(spiTransDes, 0x00, sizeof(*spiTransDes));
 	memcpy(spiTransDes->txBuf, txbuf, txlen);
 	spiTransDes->rxBuf = rxbuf;
@@ -218,11 +191,17 @@ void spiTransferForRead(SPITransDes_t *spiTransDes, uint8_t *txbuf, int txlen,
 						(void *) spiTransDes->txBuf,         // Source address to transfer from
 						txlen + rxlen - 1);       // Number of DMA transfers minus 1
 
-	while (spiTransDes->recvDone == false);
+	//while (spiTransDes->recvDone == false);
+	status = USART1->STATUS;
+	while (!(status & status_txc)) {
+		status = USART1->STATUS;
+	}
 }
 
 void spiTransferForWrite(SPITransDes_t *spiTransDes, uint8_t *txbuf, int txlen)
 {
+	uint32_t status = 0, status_txc = 0x20;
+
 	memset(spiTransDes, 0x00, sizeof(*spiTransDes));
 	memcpy(spiTransDes->txBuf, txbuf, txlen);
 
@@ -233,7 +212,13 @@ void spiTransferForWrite(SPITransDes_t *spiTransDes, uint8_t *txbuf, int txlen)
 					(void *) spiTransDes->txBuf,         // Source address to transfer from
 					txlen - 1);       // Number of DMA transfers minus 1
 
-	while (spiTransDes->sendDone == false);
+	//while (spiTransDes->sendDone == false);
+	status = USART1->STATUS;
+	while (!(status & status_txc)) {
+		status = USART1->STATUS;
+		if (spiTransDes->uwbIRQOccur)
+			break;
+	}
 }
 
 void SPIDMAInit()

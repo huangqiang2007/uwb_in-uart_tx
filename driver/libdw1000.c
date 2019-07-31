@@ -1368,6 +1368,7 @@ void (*_handleReceiveTimestampAvailable)(void) = dummy;
 
 void dwHandleInterrupt(dwDevice_t *dev)
 {
+	g_spiTransDes.uwbIRQOccur = true;
 	// read current status and handle via callbacks
 	dwReadSystemEventStatusRegister(dev);
 	if(dwIsClockProblem(dev) /* TODO and others */ && _handleError != 0) {

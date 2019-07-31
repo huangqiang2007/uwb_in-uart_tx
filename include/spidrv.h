@@ -13,6 +13,7 @@ typedef struct {
 	uint8_t *rxBuf;
 	volatile bool recvDone;
 	volatile bool sendDone;
+	volatile bool uwbIRQOccur;
 } SPITransDes_t;
 
 SPITransDes_t g_spiTransDes;
