@@ -195,6 +195,8 @@ void spiTransferForRead(SPITransDes_t *spiTransDes, uint8_t *txbuf, int txlen,
 	status = USART1->STATUS;
 	while (!(status & status_txc)) {
 		status = USART1->STATUS;
+		if (spiTransDes->uwbIRQOccur)
+			break;
 	}
 }
 

@@ -32,5 +32,6 @@ void spiTransferForRead(SPITransDes_t *spiTransDes, uint8_t *txbuf, int txlen,
 		uint8_t *rxbuf, int rxlen);
 void spiTransferForWrite(SPITransDes_t *spiTransDes, uint8_t *txbuf, int txlen);
 void SPIDMAInit(void);
+void initUSART1 (int SpiClk);
 
 #endif

@@ -12,6 +12,7 @@
 volatile uint8_t g_slaveStatus = 0;
 
 extern volatile uint32_t g_Ticks;
+//extern volatile uint32_t tx_start_times;
 
 void globalInit(void)
 {
@@ -93,7 +94,7 @@ int checkSlaveWkup(struct MainCtrlFrame *mainCtrlFr, struct MainCtrlFrame *recvS
 uint8_t TalktoSlave(dwDevice_t *dev, uint8_t src, uint8_t slave, uint8_t type, uint8_t data[])
 {
 	int8_t ret = -1;
-	uint16_t pan_id = PAN_ID1, source_addr = SLAVE_ADDR1 + (slave - 1);
+	uint16_t pan_id = PAN_ID1, dest_addr = SLAVE_ADDR1 + (slave - 1), source_addr = CENTER_ADDR1;
 
 	InitFrame(&g_mainCtrlFr, src, slave, type, data);
 
@@ -107,7 +108,7 @@ uint8_t TalktoSlave(dwDevice_t *dev, uint8_t src, uint8_t slave, uint8_t type, u
 	 * */
 	g_dataRecvDone = false;
 
-	dwTxBufferFrameEncode(&g_dwMacFrameSend, 0, 1, pan_id, source_addr,
+	dwTxBufferFrameEncode(&g_dwMacFrameSend, 1, 0, pan_id, dest_addr,
 		source_addr, (uint8_t *)&g_mainCtrlFr, sizeof(g_mainCtrlFr));
 	dwSendData(&g_dwDev, (uint8_t *)&g_dwMacFrameSend, sizeof(g_dwMacFrameSend));
 
@@ -137,6 +138,7 @@ void WakeupSlave(dwDevice_t *dev)
 	 * */
 	while (g_Ticks < g_wakup_timeout) {
 		for (i = 0; i < SLAVE_NUMS; i++) {
+			//tx_start_times = g_Ticks;
 			ret = TalktoSlave(dev, MAIN_NODE, i + 1, ENUM_SAMPLE_SET, fr_data);
 			if (ret == 0)
 				g_slaveStatus |= (1 << i);

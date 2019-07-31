@@ -125,7 +125,7 @@ int main(void)
 	clockConfig();
 
 	/*
-	 * power supply for AD and UWB
+	 * power up UWB, power down AD
 	 * */
 	powerADandUWB(1);
 
@@ -134,6 +134,9 @@ int main(void)
 	 * */
 	timerInit();
 	Delay_ms(5);
+	GPIO_PinModeSet(gpioPortA, 2, gpioModePushPull, 0);
+	Delay_ms(5);
+	GPIO_PinModeSet(gpioPortA, 2, gpioModePushPull, 1);
 
 	/*
 	 * RS422 Uart init for delivering converted data
@@ -157,6 +160,7 @@ int main(void)
 	/*
 	 * DW100 wireless device init
 	 * */
+
 	dwDeviceInit(&g_dwDev);
 
   	UDELAY_Calibrate();

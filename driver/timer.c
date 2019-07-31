@@ -16,6 +16,8 @@
 
 volatile bool Timer1_overflow;
 volatile uint32_t g_Ticks = 0;
+volatile uint32_t tx_start_times = 0;
+volatile uint32_t tx_finish_times = 0;
 /**************************************************************************//**
  * @brief TIMER0_IRQHandler
  * Interrupt Service Routine TIMER0 Interrupt Line
@@ -70,7 +72,7 @@ void setupTimer0(void)
 
 	/* Set TIMER Top value */
 	//TIMER_TopSet(TIMER0, TOP);
-	TIMER_TopSet(TIMER0, MS_COUNT * 10); //10 ms
+	TIMER_TopSet(TIMER0, MS_COUNT ); //1 ms
 
 	/* Configure TIMER */
 	TIMER_Init(TIMER0, &timerInit);
@@ -113,6 +115,7 @@ void setupTimer1(void)
 void timerInit(void)
 {
 	setupTimer1();
+	setupTimer0();
 }
 
 void Delay_us(uint32_t us)

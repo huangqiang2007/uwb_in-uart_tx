@@ -230,6 +230,10 @@
 #define LEN_AGC_TUNE2 4
 #define LEN_AGC_TUNE3 2
 
+#define EC_CTRL 0x24
+#define PLLLDT 2
+#define EC_CTRL_LEN 4
+
 // DRX_TUNE2 (for re-tuning only)
 #define DRX_TUNE 0x27
 #define DRX_TUNE0b_SUB 0x02
