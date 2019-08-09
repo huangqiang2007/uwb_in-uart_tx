@@ -59,8 +59,9 @@ void InitFrame(struct MainCtrlFrame *mainCtrlFr, uint8_t src, uint8_t slave,
 
 	mainCtrlFr->head0 = 0x55;
 	mainCtrlFr->head1 = 0xaa;
-	mainCtrlFr->len = 0;
-	mainCtrlFr->frameCtrl = ((src & 0x03) < 6) | (slave & 0x7);
+	mainCtrlFr->len = FRAME_DATA_LEN + 3; //after serial and before CRC
+	mainCtrlFr->serial += 1;
+	mainCtrlFr->frameCtrl = ((src & 0x03) << 6) | (slave & 0x7);
 	mainCtrlFr->frameType = type & 0xf;
 	memcpy(mainCtrlFr->data, data, FRAME_DATA_LEN);
 
@@ -77,7 +78,7 @@ int checkSlaveWkup(struct MainCtrlFrame *mainCtrlFr, struct MainCtrlFrame *recvS
 	 * */
 	if (((recvSlaveFr->frameCtrl & 0xc0) == (mainCtrlFr->frameCtrl & 0xc0))
 		&& ((recvSlaveFr->frameCtrl & 0x0f) == (mainCtrlFr->frameCtrl & 0x0f))
-		&& (recvSlaveFr->frameType == ENUM_SAMPLE_SET_TOKEN))
+		&& (recvSlaveFr->frameType == mainCtrlFr->frameType + 1))
 		return 0;
 	else
 		return -1;
@@ -94,7 +95,7 @@ int checkSlaveWkup(struct MainCtrlFrame *mainCtrlFr, struct MainCtrlFrame *recvS
 uint8_t TalktoSlave(dwDevice_t *dev, uint8_t src, uint8_t slave, uint8_t type, uint8_t data[])
 {
 	int8_t ret = -1;
-	uint16_t pan_id = PAN_ID1, dest_addr = SLAVE_ADDR1 + (slave - 1), source_addr = CENTER_ADDR1;
+//	uint16_t pan_id = PAN_ID1, dest_addr = SLAVE_ADDR1 + (slave - 1), source_addr = CENTER_ADDR1;
 
 	InitFrame(&g_mainCtrlFr, src, slave, type, data);
 
@@ -108,16 +109,22 @@ uint8_t TalktoSlave(dwDevice_t *dev, uint8_t src, uint8_t slave, uint8_t type, u
 	 * */
 	g_dataRecvDone = false;
 
-	dwTxBufferFrameEncode(&g_dwMacFrameSend, 1, 0, pan_id, dest_addr,
-		source_addr, (uint8_t *)&g_mainCtrlFr, sizeof(g_mainCtrlFr));
-	dwSendData(&g_dwDev, (uint8_t *)&g_dwMacFrameSend, sizeof(g_dwMacFrameSend));
+//	dwTxBufferFrameEncode(&g_dwMacFrameSend, 1, 0, pan_id, dest_addr,
+//		source_addr, (uint8_t *)&g_mainCtrlFr, sizeof(g_mainCtrlFr));
+//	dwSendData(&g_dwDev, (uint8_t *)&g_dwMacFrameSend, sizeof(g_dwMacFrameSend));
+	dwSendData(&g_dwDev, (uint8_t *)&g_mainCtrlFr, sizeof(g_mainCtrlFr));
 
 	while (g_Ticks < g_cmd_feedback_timeout) {
 		if (g_dataRecvDone == true) {
 			ret = checkSlaveWkup(&g_mainCtrlFr, &g_recvSlaveFr);
+			if (ret < 0)
+				ret = -1;
 			break;
 		}
 	}
+
+	if (ret < 0)
+		ret = -1;
 
 	return ret;
 }
@@ -139,6 +146,7 @@ void WakeupSlave(dwDevice_t *dev)
 	while (g_Ticks < g_wakup_timeout) {
 		for (i = 0; i < SLAVE_NUMS; i++) {
 			//tx_start_times = g_Ticks;
+			Delay_ms(1);
 			ret = TalktoSlave(dev, MAIN_NODE, i + 1, ENUM_SAMPLE_SET, fr_data);
 			if (ret == 0)
 				g_slaveStatus |= (1 << i);
@@ -168,35 +176,42 @@ void RecvFromSlave(dwDevice_t *dev)
 	uint16_t crc_sum = 0;
 	int i = 0, ret = -1;
 	uint8_t fr_data[FRAME_DATA_LEN] = {0};
+	static int cnt=0;
 
 	memset(&g_RS422DataFr, 0xff, sizeof(struct RS422DataFrame));
 	g_RS422DataFr.head0 = 0x33;
 	g_RS422DataFr.head1 = 0xcc;
 	g_RS422DataFr.len = 0;
+	uint8_t slave_num = 0;
 
 	/*
 	 * scan each slave and receive sample data
 	 * */
 	for (i = 0; i < SLAVE_NUMS; i++) {
 		if ((g_slaveStatus & (1 << i)) == (1 << i)) {
-			ret = TalktoSlave(dev, MAIN_NODE, i, ENUM_SAMPLE_DATA, fr_data);
+			ret = TalktoSlave(dev, MAIN_NODE, i+1, ENUM_SAMPLE_DATA, fr_data);
 			if (ret == 0) {
+				cnt = 0;
 				crc_sum = CalFrameCRC(g_recvSlaveFr.data, FRAME_DATA_LEN);
-				if (g_mainCtrlFr.head0 != 0x55 || g_mainCtrlFr.head1 != 0xaa
-					|| g_mainCtrlFr.crc0 != (crc_sum & 0xff) || g_mainCtrlFr.crc1 != ((crc_sum >> 8) & 0xff))
+				if (g_recvSlaveFr.head0 != 0x55 || g_recvSlaveFr.head1 != 0xaa
+					|| g_recvSlaveFr.crc0 != (crc_sum & 0xff) || g_recvSlaveFr.crc1 != ((crc_sum >> 8) & 0xff))
 					continue;
 
-				memcpy(&g_RS422DataFr.packets[g_RS422DataFr.len], &g_recvSlaveFr, sizeof(g_recvSlaveFr));
+				slave_num = g_recvSlaveFr.frameCtrl & 0x07;
+				memcpy(&g_RS422DataFr.packets[slave_num], &g_recvSlaveFr, sizeof(g_recvSlaveFr));
 				g_RS422DataFr.len++;
 			} else {
-				g_slaveStatus &= ~(1 << i);
-
-				/*
-				 * if all slave is offline, reset flag 'g_slaveWkup' to begin wakeup logic.
-				 * */
-				if ((g_slaveStatus & SLAVE_WKUP_MSK) == 0) {
-					g_slaveWkup = false;
-					g_cur_mode = MAIN_IDLEMODE;
+				cnt += 1;
+				if (cnt > 5){
+					cnt = 0;
+					g_slaveStatus &= ~(1 << i);
+					/*
+					 * if all slave is offline, reset flag 'g_slaveWkup' to begin wakeup logic.
+					 * */
+					if ((g_slaveStatus & SLAVE_WKUP_MSK) == 0) {
+						g_slaveWkup = false;
+						g_cur_mode = MAIN_IDLEMODE;
+					}
 				}
 			}
 		}
@@ -211,6 +226,6 @@ void RecvFromSlave(dwDevice_t *dev)
 		g_RS422DataFr.crc0 = crc_sum & 0xff;
 		g_RS422DataFr.crc1 = (crc_sum >> 8) & 0xff;
 
-		uartPutData((uint8_t *)&g_RS422DataFr.packets[0], sizeof(struct RS422DataFrame));
+		uartPutData((uint8_t *)&g_RS422DataFr, sizeof(struct RS422DataFrame));
 	}
 }

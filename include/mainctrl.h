@@ -92,6 +92,7 @@ struct BackTokenFrame g_backTokenFr;
 volatile int8_t g_cur_mode;
 volatile int8_t g_slaveWkup;
 volatile bool g_dataRecvDone;
+volatile bool g_dataRecvFail;
 
 extern void globalInit(void);
 extern uint16_t CalFrameCRC(uint8_t data[], int len);

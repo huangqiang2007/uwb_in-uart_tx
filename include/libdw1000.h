@@ -228,6 +228,8 @@ void dwDeviceInit(dwDevice_t* dev);
 
 void dwSendData(dwDevice_t *dev, uint8_t data[], uint32_t len);
 void dwRecvData(dwDevice_t *dev);
+void dwSentData(dwDevice_t *dev);
+void dwReceiveFailed(dwDevice_t *dev);
 
 /* Error codes */
 #define DW_ERROR_OK 0

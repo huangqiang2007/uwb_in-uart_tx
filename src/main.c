@@ -15,7 +15,7 @@
 #include "libdw1000.h"
 #include "em_dma.h"
 
-extern volatile int8_t g_slaveWkup;
+//extern volatile int8_t g_slaveWkup;
 
 void clockConfig(void)
 {
@@ -186,7 +186,7 @@ int main(void)
 				break;
 		}
 
-		Delay_ms(2);
+		Delay_ms(1);
 	}
 }
 #endif
