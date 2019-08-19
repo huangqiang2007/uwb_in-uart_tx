@@ -78,7 +78,7 @@ int main(void)
 		recvDone = g_spiTransDes.recvDone;
 	}
 }
-#else 1
+#elif 1
 
 void spiDMA_test(dwDevice_t *dev)
 {

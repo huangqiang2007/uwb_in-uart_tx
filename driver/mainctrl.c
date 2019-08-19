@@ -53,7 +53,7 @@ uint16_t CalFrameCRC(uint8_t data[], int len)
 }
 
 void InitFrame(struct MainCtrlFrame *mainCtrlFr, uint8_t src, uint8_t slave,
-		uint8_t type, uint8_t data[])
+		uint8_t type)
 {
 	uint16_t data_crc = 0;
 
@@ -63,7 +63,7 @@ void InitFrame(struct MainCtrlFrame *mainCtrlFr, uint8_t src, uint8_t slave,
 	mainCtrlFr->serial += 1;
 	mainCtrlFr->frameCtrl = ((src & 0x03) << 6) | (slave & 0x7);
 	mainCtrlFr->frameType = type & 0xf;
-	memcpy(mainCtrlFr->data, data, FRAME_DATA_LEN);
+	memset(mainCtrlFr->data, 0x00, FRAME_DATA_LEN);
 
 	data_crc = CalFrameCRC(mainCtrlFr->data, FRAME_DATA_LEN);
 	mainCtrlFr->crc0 = data_crc & 0xff;
@@ -92,12 +92,12 @@ int checkSlaveWkup(struct MainCtrlFrame *mainCtrlFr, struct MainCtrlFrame *recvS
  *
  * @ret: -1: talk timeout; 0: talk successfully.
  * */
-uint8_t TalktoSlave(dwDevice_t *dev, uint8_t src, uint8_t slave, uint8_t type, uint8_t data[])
+uint8_t TalktoSlave(dwDevice_t *dev, uint8_t src, uint8_t slave, uint8_t type)
 {
 	int8_t ret = -1;
 //	uint16_t pan_id = PAN_ID1, dest_addr = SLAVE_ADDR1 + (slave - 1), source_addr = CENTER_ADDR1;
 
-	InitFrame(&g_mainCtrlFr, src, slave, type, data);
+	InitFrame(&g_mainCtrlFr, src, slave, type);
 
 	/*
 	 * reset command timeout
@@ -135,9 +135,6 @@ uint8_t TalktoSlave(dwDevice_t *dev, uint8_t src, uint8_t slave, uint8_t type, u
 void WakeupSlave(dwDevice_t *dev)
 {
 	int i = 0, ret = -1;
-	uint8_t fr_data[FRAME_DATA_LEN];
-
-	memset(fr_data, 0xff, FRAME_DATA_LEN);
 	g_wakup_timeout = g_Ticks + WAKUP_DURATION;
 
 	/*
@@ -147,7 +144,7 @@ void WakeupSlave(dwDevice_t *dev)
 		for (i = 0; i < SLAVE_NUMS; i++) {
 			//tx_start_times = g_Ticks;
 			Delay_ms(1);
-			ret = TalktoSlave(dev, MAIN_NODE, i + 1, ENUM_SAMPLE_SET, fr_data);
+			ret = TalktoSlave(dev, MAIN_NODE, i + 1, ENUM_SAMPLE_SET);
 			if (ret == 0)
 				g_slaveStatus |= (1 << i);
 		}
@@ -175,7 +172,6 @@ void RecvFromSlave(dwDevice_t *dev)
 {
 	uint16_t crc_sum = 0;
 	int i = 0, ret = -1;
-	uint8_t fr_data[FRAME_DATA_LEN] = {0};
 	static int cnt=0;
 
 	memset(&g_RS422DataFr, 0xff, sizeof(struct RS422DataFrame));
@@ -189,7 +185,7 @@ void RecvFromSlave(dwDevice_t *dev)
 	 * */
 	for (i = 0; i < SLAVE_NUMS; i++) {
 		if ((g_slaveStatus & (1 << i)) == (1 << i)) {
-			ret = TalktoSlave(dev, MAIN_NODE, i+1, ENUM_SAMPLE_DATA, fr_data);
+			ret = TalktoSlave(dev, MAIN_NODE, i, ENUM_SAMPLE_DATA);
 			if (ret == 0) {
 				cnt = 0;
 				crc_sum = CalFrameCRC(g_recvSlaveFr.data, FRAME_DATA_LEN);

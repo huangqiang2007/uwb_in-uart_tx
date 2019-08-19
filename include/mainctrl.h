@@ -46,21 +46,9 @@ enum {
 	ENUM_SLAVE_SLEEP_TOKEN
 };
 
-#define FRAME_DATA_LEN 5
+#define FRAME_DATA_LEN 64
 
 struct MainCtrlFrame {
-	uint8_t head0; //0x55
-	uint8_t head1; //0xaa
-	uint8_t len; // data len
-	uint8_t serial; // serial num: 0-255
-	uint8_t frameCtrl;
-	uint8_t frameType;
-	uint8_t data[FRAME_DATA_LEN];
-	uint8_t crc0; // crc[7:0]
-	uint8_t crc1; // crc[15:8]
-};
-
-struct BackTokenFrame {
 	uint8_t head0; //0x55
 	uint8_t head1; //0xaa
 	uint8_t len; // data len
@@ -87,7 +75,6 @@ struct RS422DataFrame {
 struct MainCtrlFrame g_mainCtrlFr, g_recvSlaveFr;
 dwMacFrame_t g_dwMacFrameSend, g_dwMacFrameRecv;
 struct RS422DataFrame g_RS422DataFr;
-struct BackTokenFrame g_backTokenFr;
 
 volatile int8_t g_cur_mode;
 volatile int8_t g_slaveWkup;
