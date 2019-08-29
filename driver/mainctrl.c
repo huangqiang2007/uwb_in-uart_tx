@@ -178,7 +178,6 @@ void RecvFromSlave(dwDevice_t *dev)
 	g_RS422DataFr.head0 = 0x33;
 	g_RS422DataFr.head1 = 0xcc;
 	g_RS422DataFr.len = 0;
-	uint8_t slave_num = 0;
 
 	/*
 	 * scan each slave and receive sample data
@@ -186,21 +185,21 @@ void RecvFromSlave(dwDevice_t *dev)
 	for (i = 0; i < SLAVE_NUMS; i++) {
 		if ((g_slaveStatus & (1 << i)) == (1 << i)) {
 			ret = TalktoSlave(dev, MAIN_NODE, i, ENUM_SAMPLE_DATA);
-			if (ret == 0) {
+			if (!ret) {
 				cnt = 0;
 				crc_sum = CalFrameCRC(g_recvSlaveFr.data, FRAME_DATA_LEN);
 				if (g_recvSlaveFr.head0 != 0x55 || g_recvSlaveFr.head1 != 0xaa
-					|| g_recvSlaveFr.crc0 != (crc_sum & 0xff) || g_recvSlaveFr.crc1 != ((crc_sum >> 8) & 0xff))
+					|| g_recvSlaveFr.crc0 != (crc_sum & 0xff) || g_recvSlaveFr.crc1 != ((crc_sum >> 8) & 0xff)
+					|| g_recvSlaveFr.len == 0)
 					continue;
 
-				slave_num = g_recvSlaveFr.frameCtrl & 0x07;
-				memcpy(&g_RS422DataFr.packets[slave_num], &g_recvSlaveFr, sizeof(g_recvSlaveFr));
-				g_RS422DataFr.len++;
+				memcpy(&g_RS422DataFr.packets[g_RS422DataFr.len++], &g_recvSlaveFr, sizeof(g_recvSlaveFr));
 			} else {
 				cnt += 1;
 				if (cnt > 5){
 					cnt = 0;
 					g_slaveStatus &= ~(1 << i);
+
 					/*
 					 * if all slave is offline, reset flag 'g_slaveWkup' to begin wakeup logic.
 					 * */
@@ -217,11 +216,7 @@ void RecvFromSlave(dwDevice_t *dev)
 	 * if it exists valid sample data coming from slaves,
 	 * calculate CRC and send them to control computer.
 	 * */
-	if (g_RS422DataFr.len > 0) {
-		crc_sum =  CalFrameCRC((uint8_t *)&g_RS422DataFr.packets[0], sizeof(struct MainCtrlFrame) * SLAVE_NUMS);
-		g_RS422DataFr.crc0 = crc_sum & 0xff;
-		g_RS422DataFr.crc1 = (crc_sum >> 8) & 0xff;
-
-		uartPutData((uint8_t *)&g_RS422DataFr, sizeof(struct RS422DataFrame));
+	for (i = 0; i < g_RS422DataFr.len; i++) {
+		uartPutData((uint8_t *)&g_RS422DataFr.packets[i], sizeof(struct MainCtrlFrame));
 	}
 }
