@@ -3,6 +3,7 @@
 #include "em_usart.h"
 #include "em_cmu.h"
 #include "em_gpio.h"
+#include "em_timer.h"
 #include "timer.h"
 #include "uartdrv.h"
 #include "mainctrl.h"
@@ -165,6 +166,9 @@ void WakeupSlave(dwDevice_t *dev)
 	}
 }
 
+int time_start=0;
+int time_finish=0;
+int time=0;
 /*
  * scan all slaves and fetch sample data.
  * */
@@ -184,8 +188,9 @@ void RecvFromSlave(dwDevice_t *dev)
 	 * */
 	for (i = 0; i < SLAVE_NUMS; i++) {
 		if ((g_slaveStatus & (1 << i)) == (1 << i)) {
-			ret = TalktoSlave(dev, MAIN_NODE, i, ENUM_SAMPLE_DATA);
-			if (!ret) {
+//			time_start = TIMER_CounterGet(TIMER0);
+			ret = TalktoSlave(dev, MAIN_NODE, i + 1, ENUM_SAMPLE_DATA);
+			if (ret == 0) {
 				cnt = 0;
 				crc_sum = CalFrameCRC(g_recvSlaveFr.data, FRAME_DATA_LEN);
 				if (g_recvSlaveFr.head0 != 0x55 || g_recvSlaveFr.head1 != 0xaa
@@ -208,6 +213,12 @@ void RecvFromSlave(dwDevice_t *dev)
 						g_cur_mode = MAIN_IDLEMODE;
 					}
 				}
+			}
+		}
+		else{
+			g_cmd_unwake_timeout = g_Ticks + UNWAKE_CMD_TIMEOUT;
+			while (g_Ticks < g_cmd_unwake_timeout) {
+				; //wait 2ms for non-waked salve
 			}
 		}
 	}
