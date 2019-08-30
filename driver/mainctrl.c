@@ -199,6 +199,10 @@ void RecvFromSlave(dwDevice_t *dev)
 					continue;
 
 				memcpy(&g_RS422DataFr.packets[g_RS422DataFr.len++], &g_recvSlaveFr, sizeof(g_recvSlaveFr));
+				g_cmd_wake_wait_time = g_Ticks + WAKE_CMD_WAIT_TIME;
+				while (g_Ticks < g_cmd_wake_wait_time) {
+					; //wait 1ms for after a receive
+				}
 			} else {
 				cnt += 1;
 				if (cnt > 5){
