@@ -33,7 +33,7 @@ volatile uint32_t g_cmd_feedback_timeout; /* the count of 1ms unit */
  *
  * 600000 * 1ms = 10 minutes
  * */
-#define WAKUP_DURATION 61000 /* wake up time 610 second*/
+#define WAKUP_DURATION 610000 /* wake up time 610 second*/
 volatile uint32_t g_wakup_timeout; /* the count of 1ms unit */
 
 /*
@@ -41,7 +41,7 @@ volatile uint32_t g_wakup_timeout; /* the count of 1ms unit */
  *
  * 30000 * 1ms = 5 minutes
  * */
-#define IDLE_JUDGE 30000
+#define IDLE_JUDGE 300000
 volatile uint32_t g_idle_judge;
 
 void setupTimer0(void);

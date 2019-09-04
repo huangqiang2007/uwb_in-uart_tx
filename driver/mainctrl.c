@@ -61,7 +61,7 @@ void InitFrame(struct MainCtrlFrame *mainCtrlFr, uint8_t src, uint8_t slave,
 	mainCtrlFr->head0 = 0x55;
 	mainCtrlFr->head1 = 0xaa;
 	mainCtrlFr->len = FRAME_DATA_LEN + 3; //after serial and before CRC
-	mainCtrlFr->serial += 1;
+	if (g_recvSlaveFr.len != 0) mainCtrlFr->serial += 1;
 	mainCtrlFr->frameCtrl = ((src & 0x03) << 6) | (slave & 0x7);
 	mainCtrlFr->frameType = type & 0xf;
 	memset(mainCtrlFr->data, 0x00, FRAME_DATA_LEN);
@@ -166,9 +166,9 @@ void WakeupSlave(dwDevice_t *dev)
 	}
 }
 
-int time_start=0;
-int time_finish=0;
-int time=0;
+//int time_start=0;
+//int time_finish=0;
+//int time=0;
 /*
  * scan all slaves and fetch sample data.
  * */
@@ -193,16 +193,18 @@ void RecvFromSlave(dwDevice_t *dev)
 			if (ret == 0) {
 				cnt = 0;
 				crc_sum = CalFrameCRC(g_recvSlaveFr.data, FRAME_DATA_LEN);
+
+				g_cmd_wake_wait_time = g_Ticks + WAKE_CMD_WAIT_TIME;
+				while (g_Ticks < g_cmd_wake_wait_time) {
+					; //wait 1ms for after a receive
+				}
+
 				if (g_recvSlaveFr.head0 != 0x55 || g_recvSlaveFr.head1 != 0xaa
 					|| g_recvSlaveFr.crc0 != (crc_sum & 0xff) || g_recvSlaveFr.crc1 != ((crc_sum >> 8) & 0xff)
 					|| g_recvSlaveFr.len == 0)
 					continue;
 
 				memcpy(&g_RS422DataFr.packets[g_RS422DataFr.len++], &g_recvSlaveFr, sizeof(g_recvSlaveFr));
-				g_cmd_wake_wait_time = g_Ticks + WAKE_CMD_WAIT_TIME;
-				while (g_Ticks < g_cmd_wake_wait_time) {
-					; //wait 1ms for after a receive
-				}
 			} else {
 				cnt += 1;
 				if (cnt > 5){
