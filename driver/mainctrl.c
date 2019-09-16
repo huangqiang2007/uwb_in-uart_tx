@@ -30,11 +30,9 @@ void globalInit(void)
 void powerADandUWB(uint8_t master)
 {
 	if (master == 1) {
-		GPIO_PinModeSet(gpioPortA, 1, gpioModePushPull, 1);
-		GPIO_PinModeSet(gpioPortA, 0, gpioModePushPull, 0);
-	} else {
-		GPIO_PinModeSet(gpioPortA, 1, gpioModePushPull, 1);
 		GPIO_PinModeSet(gpioPortA, 0, gpioModePushPull, 1);
+	} else {
+		GPIO_PinModeSet(gpioPortA, 0, gpioModePushPull, 0);
 	}
 }
 

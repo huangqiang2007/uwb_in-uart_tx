@@ -19,6 +19,14 @@
 
 void clockConfig(void)
 {
+	CMU_ClockEnable(cmuClock_GPIO, true);
+	CMU_ClockEnable(cmuClock_TIMER0, true);
+	CMU_ClockEnable(cmuClock_TIMER1, true);
+	timer_init();
+	Delay_ms(5);
+	GPIO_PinModeSet(gpioPortA, 1, gpioModePushPull, 1);
+	Delay_ms(5);
+
 	SystemCoreClockUpdate();
 
 	/*
@@ -108,6 +116,7 @@ void spiDMA_test(dwDevice_t *dev)
 	}
 }
 int main(void)
+
 {
 	/*
 	 * Chip errata
@@ -125,18 +134,14 @@ int main(void)
 	clockConfig();
 
 	/*
-	 * power up UWB, power down AD
+	 * power down AD
 	 * */
-	powerADandUWB(1);
+	powerADandUWB(0);
 
 	/*
 	 * Timer init
 	 * */
-	timerInit();
-	Delay_ms(5);
-	GPIO_PinModeSet(gpioPortA, 2, gpioModePushPull, 0);
-	Delay_ms(5);
-	GPIO_PinModeSet(gpioPortA, 2, gpioModePushPull, 1);
+	timer_init();
 
 	/*
 	 * RS422 Uart init for delivering converted data
@@ -160,11 +165,21 @@ int main(void)
 	/*
 	 * DW100 wireless device init
 	 * */
+	GPIO_PinModeSet(gpioPortC, 13, gpioModePushPull, 1);
+	Delay_ms(2);
+	GPIO_PinModeSet(gpioPortC, 13, gpioModePushPull, 0);
+
+	GPIO_PinModeSet(gpioPortA, 2, gpioModePushPull, 0);
+	Delay_ms(5);
+	GPIO_PinModeSet(gpioPortA, 2, gpioModePushPull, 1);
 
 	dwDeviceInit(&g_dwDev);
 
   	UDELAY_Calibrate();
   	Delay_ms(500);
+
+	dwNewReceive(&g_dwDev);
+	dwStartReceive(&g_dwDev);
 
 	while (1) {
 		switch(g_cur_mode)

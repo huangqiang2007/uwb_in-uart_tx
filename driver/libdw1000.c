@@ -81,8 +81,8 @@ void dwInit(dwDevice_t* dev, uint16_t PanID, uint16_t sourceAddr)
 	dev->pulseFrequency = TX_PULSE_FREQ_16MHZ;
 	dev->dataRate = TRX_RATE_6800KBPS;
 	dev->preambleLength = TX_PREAMBLE_LEN_128;
-	dev->preambleCode = PREAMBLE_CODE_16MHZ_4;
-	dev->channel = CHANNEL_5;
+	dev->preambleCode = PREAMBLE_CODE_16MHZ_2;
+	dev->channel = CHANNEL_1;
 	dev->smartPower = true;
 	dev->frameCheck = true;
 	dev->permanentReceive = false;

@@ -112,10 +112,12 @@ void setupTimer1(void)
 	TIMER_Init(TIMER1, &timerInit);
 }
 
-void timerInit(void)
+void timer_init(void)
 {
-	setupTimer1();
+	g_Ticks = 0;
+
 	setupTimer0();
+	setupTimer1();
 }
 
 void Delay_us(uint32_t us)
