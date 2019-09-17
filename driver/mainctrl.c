@@ -142,10 +142,11 @@ void WakeupSlave(dwDevice_t *dev)
 	while (g_Ticks < g_wakup_timeout) {
 		for (i = 0; i < SLAVE_NUMS; i++) {
 			//tx_start_times = g_Ticks;
-			Delay_ms(1);
 			ret = TalktoSlave(dev, MAIN_NODE, i + 1, ENUM_SAMPLE_SET);
-			if (ret == 0)
+			if (ret == 0){
 				g_slaveStatus |= (1 << i);
+				Delay_ms(2);
+			}
 		}
 
 		/*
