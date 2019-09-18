@@ -6,6 +6,8 @@
 #include "em_gpio.h"
 #include "main.h"
 #include "uartdrv.h"
+#include "mainctrl.h"
+#include "string.h"
 
 #define UART_FRAMR_QUEUE_LEN_10 10
 
@@ -279,6 +281,62 @@ uint32_t uartGetData(uint8_t * dataPtr, uint32_t dataLen)
 	while (i < dataLen) {
 		*(dataPtr + i) = rxBuf.data[rxBuf.rdI];
 		rxBuf.rdI      = (rxBuf.rdI + 1) % BUFFERSIZE;
+		i++;
+	}
+
+	/* Decrement pending byte counter */
+	rxBuf.pendingBytes -= dataLen;
+
+	return i;
+}
+
+sleepCMD_t sleepCMD = {
+		.begin = "begin",
+		.frameLen = 0x0c,
+		.reserve = {0},
+		.sleepCmd = {0x91, 0xee},
+		.crc = {0x9d, 0xee},
+		.end = "end-",
+};
+
+bool parseSleepCMD(sleepCMD_t *cmd)
+{
+	if (strncmp((char *)cmd->begin, (char *)sleepCMD.begin, 5)
+		&& strncmp((char *)cmd->sleepCmd, (char *)sleepCMD.sleepCmd, 2)) {
+		return true;
+	}
+
+	return false;
+}
+
+uint32_t checkSleepCMD(rcvMsg_t *rcvMessage)
+{
+	uint32_t i = 0;
+	uint32_t dataLen;
+
+	dataLen = rxBuf.pendingBytes;
+
+	/* Copy data from Rx buffer to dataPtr */
+	while (i < dataLen) {
+		if (rxBuf.data[rxBuf.rdI] == 0x62) {
+			rcvMessage->searchHeadFlag = true;
+			rcvMessage->len = 0;
+		}
+
+		if (rcvMessage->searchHeadFlag) {
+			*(rcvMessage->rcvBytes + rcvMessage->len) = rxBuf.data[rxBuf.rdI];
+			rcvMessage->len++;
+			if (rcvMessage->len == SLEEPCMD_LEN) {
+				rxBuf.pendingBytes -= i;
+
+				if (parseSleepCMD((sleepCMD_t *)rcvMessage->rcvBytes)) {
+					g_cur_mode = MAIN_SLEEPMODE;
+					return i;
+				}
+			}
+		}
+
+		rxBuf.rdI = (rxBuf.rdI + 1) % BUFFERSIZE;
 		i++;
 	}
 

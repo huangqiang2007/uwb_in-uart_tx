@@ -8,7 +8,7 @@
 
 #define SLAVE_NUMS 4
 
-enum {MAIN_IDLEMODE=0, MAIN_WKUPMODE, MAIN_SAMPLEMODE};
+enum {MAIN_IDLEMODE=0, MAIN_WKUPMODE, MAIN_SAMPLEMODE, MAIN_SLEEPMODE, DEFAULT_MODE};
 
 /*
  * slave waken up flag
@@ -72,9 +72,26 @@ struct RS422DataFrame {
 	uint8_t crc1; // crc[15:8]
 };
 
+#define SLEEPCMD_LEN 22
+typedef struct rcvMsg {
+	uint8_t rcvBytes[SLEEPCMD_LEN];
+	uint8_t len;
+	bool searchHeadFlag;
+} rcvMsg_t;
+
+typedef struct sleepCMD {
+	uint8_t begin[5];
+	uint8_t frameLen;
+	uint8_t reserve[8];
+	uint8_t sleepCmd[2];
+	uint8_t crc[2];
+	uint8_t end[4];
+} __attribute__((packed)) sleepCMD_t;
+
 struct MainCtrlFrame g_mainCtrlFr, g_recvSlaveFr;
 dwMacFrame_t g_dwMacFrameSend, g_dwMacFrameRecv;
-struct RS422DataFrame g_RS422DataFr;
+//struct RS422DataFrame g_RS422DataFr;
+rcvMsg_t g_rcvMessage;
 
 volatile int8_t g_cur_mode;
 volatile int8_t g_slaveWkup;
@@ -84,6 +101,7 @@ volatile bool g_dataRecvFail;
 extern void globalInit(void);
 extern uint16_t CalFrameCRC(uint8_t data[], int len);
 extern void WakeupSlave(dwDevice_t *dev);
+extern void sleepSlave(dwDevice_t *dev);
 extern void RecvFromSlave(dwDevice_t *dev);
 extern void powerADandUWB(uint8_t master);
 

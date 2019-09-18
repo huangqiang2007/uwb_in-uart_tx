@@ -22,6 +22,7 @@ void globalInit(void)
 	memset((void *)&g_dwDev , 0x00, sizeof(g_dwDev));
 	memset((void *)&g_dwMacFrameSend, 0x00, sizeof(g_dwMacFrameSend));
 	memset((void *)&g_dwMacFrameRecv, 0x00, sizeof(g_dwMacFrameRecv));
+	memset((void *)&g_rcvMessage, 0x00, sizeof(g_rcvMessage));
 	g_dataRecvDone = false;
 	g_slaveWkup = false;
 	g_cur_mode = MAIN_IDLEMODE;
@@ -177,10 +178,10 @@ void RecvFromSlave(dwDevice_t *dev)
 	int i = 0, ret = -1;
 	static int cnt=0;
 
-	memset(&g_RS422DataFr, 0xff, sizeof(struct RS422DataFrame));
-	g_RS422DataFr.head0 = 0x33;
-	g_RS422DataFr.head1 = 0xcc;
-	g_RS422DataFr.len = 0;
+//	memset(&g_RS422DataFr, 0xff, sizeof(struct RS422DataFrame));
+//	g_RS422DataFr.head0 = 0x33;
+//	g_RS422DataFr.head1 = 0xcc;
+//	g_RS422DataFr.len = 0;
 
 	/*
 	 * scan each slave and receive sample data
@@ -203,7 +204,8 @@ void RecvFromSlave(dwDevice_t *dev)
 					|| g_recvSlaveFr.len == 0)
 					continue;
 
-				memcpy(&g_RS422DataFr.packets[g_RS422DataFr.len++], &g_recvSlaveFr, sizeof(g_recvSlaveFr));
+				//memcpy(&g_RS422DataFr.packets[g_RS422DataFr.len++], &g_recvSlaveFr, sizeof(g_recvSlaveFr));
+				uartPutData((uint8_t *)&g_recvSlaveFr, sizeof(struct MainCtrlFrame));
 			} else {
 				cnt += 1;
 				if (cnt > 5){
@@ -232,7 +234,67 @@ void RecvFromSlave(dwDevice_t *dev)
 	 * if it exists valid sample data coming from slaves,
 	 * calculate CRC and send them to control computer.
 	 * */
-	for (i = 0; i < g_RS422DataFr.len; i++) {
-		uartPutData((uint8_t *)&g_RS422DataFr.packets[i], sizeof(struct MainCtrlFrame));
+//	for (i = 0; i < g_RS422DataFr.len; i++) {
+//		uartPutData((uint8_t *)&g_RS422DataFr.packets[i], sizeof(struct MainCtrlFrame));
+//	}
+}
+
+/*
+ * scan all slaves and fetch sample data.
+ * */
+void sleepSlave(dwDevice_t *dev)
+{
+	uint16_t crc_sum = 0;
+	int i = 0, ret = -1;
+	static int cnt=0;
+
+	/*
+	 * scan each slave and send sleep command
+	 * */
+	for (i = 0; i < SLAVE_NUMS; i++) {
+		if ((g_slaveStatus & (1 << i)) == (1 << i)) {
+			ret = TalktoSlave(dev, MAIN_NODE, i + 1, ENUM_SLAVE_SLEEP);
+			if (ret == 0) {
+				cnt = 0;
+				crc_sum = CalFrameCRC(g_recvSlaveFr.data, FRAME_DATA_LEN);
+
+				g_cmd_wake_wait_time = g_Ticks + WAKE_CMD_WAIT_TIME;
+				while (g_Ticks < g_cmd_wake_wait_time) {
+					; //wait 1ms for after a receive
+				}
+
+				if (g_recvSlaveFr.head0 != 0x55 || g_recvSlaveFr.head1 != 0xaa
+					|| g_recvSlaveFr.crc0 != (crc_sum & 0xff) || g_recvSlaveFr.crc1 != ((crc_sum >> 8) & 0xff)
+					|| g_recvSlaveFr.len == 0)
+					continue;
+
+				g_slaveStatus &= ~(1 << i);
+				if ((g_slaveStatus & SLAVE_WKUP_MSK) == 0) {
+					g_cur_mode = DEFAULT_MODE;
+					return;
+				}
+				//uartPutData((uint8_t *)&g_recvSlaveFr, sizeof(struct MainCtrlFrame));
+			} else {
+				cnt += 1;
+				if (cnt > 5){
+					cnt = 0;
+					g_slaveStatus &= ~(1 << i);
+
+					/*
+					 * if all slave is offline, reset flag 'g_slaveWkup' to begin wakeup logic.
+					 * */
+					if ((g_slaveStatus & SLAVE_WKUP_MSK) == 0) {
+						//g_slaveWkup = false;
+						g_cur_mode = DEFAULT_MODE;
+						return;
+					}
+				}
+			}
+		} else {
+			g_cmd_unwake_timeout = g_Ticks + UNWAKE_CMD_TIMEOUT;
+			while (g_Ticks < g_cmd_unwake_timeout) {
+				; //wait 2ms for non-waked salve
+			}
+		}
 	}
 }

@@ -182,6 +182,12 @@ int main(void)
 	dwStartReceive(&g_dwDev);
 
 	while (1) {
+		/*
+		 * if receive system sleep command, switch to
+		 * MAIN_SLEEPMODE
+		 * */
+		checkSleepCMD(&g_rcvMessage);
+
 		switch(g_cur_mode)
 		{
 			case MAIN_WKUPMODE:
@@ -194,6 +200,14 @@ int main(void)
 
 			case MAIN_IDLEMODE:
 				g_cur_mode = MAIN_WKUPMODE;
+				break;
+
+			case MAIN_SLEEPMODE:
+				sleepSlave(&g_dwDev);
+				break;
+
+			case DEFAULT_MODE:
+				g_cur_mode = DEFAULT_MODE;
 				break;
 
 			default:
