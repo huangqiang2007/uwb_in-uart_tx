@@ -332,6 +332,8 @@ uint32_t checkSleepCMD(rcvMsg_t *rcvMessage)
 				if (parseSleepCMD((sleepCMD_t *)rcvMessage->rcvBytes)) {
 					g_cur_mode = MAIN_SLEEPMODE;
 					return i;
+				} else {
+					rcvMessage->searchHeadFlag = false;
 				}
 			}
 		}
