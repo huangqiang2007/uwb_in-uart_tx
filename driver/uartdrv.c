@@ -332,10 +332,9 @@ uint32_t checkSleepCMD(rcvMsg_t *rcvMessage)
 			*(rcvMessage->rcvBytes + rcvMessage->len) = rxBuf.data[rxBuf.rdI];
 			rcvMessage->len++;
 			if (rcvMessage->len == SLEEPCMD_LEN) {
-				rxBuf.pendingBytes -= i;
-
 				if (parseSleepCMD((sleepCMD_t *)rcvMessage->rcvBytes)) {
 					g_cur_mode = MAIN_SLEEPMODE;
+					rxBuf.pendingBytes -= SLEEPCMD_LEN;
 					return i;
 				} else {
 					rcvMessage->searchHeadFlag = false;
