@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include "em_core.h"
+#include "em_cmu.h"
 #include "em_device.h"
 #include "em_usart.h"
 #include "em_gpio.h"
@@ -105,6 +106,7 @@ void uartSetup(void)
 	/*
 	 * Enable clock for GPIO module (required for pin configuration)
 	 * */
+	CMU_ClockEnable(cmuClock_USART0, true);
 	/*
 	 * Configure GPIO pins
 	 * */
@@ -301,8 +303,8 @@ sleepCMD_t sleepCMD = {
 
 bool parseSleepCMD(sleepCMD_t *cmd)
 {
-	if (strncmp((char *)cmd->begin, (char *)sleepCMD.begin, 5)
-		&& strncmp((char *)cmd->sleepCmd, (char *)sleepCMD.sleepCmd, 2)) {
+	if (!strncmp((char *)cmd->begin, (char *)sleepCMD.begin, 5)
+		&& !strncmp((char *)cmd->sleepCmd, (char *)sleepCMD.sleepCmd, 2)) {
 		return true;
 	}
 
@@ -313,6 +315,9 @@ uint32_t checkSleepCMD(rcvMsg_t *rcvMessage)
 {
 	uint32_t i = 0;
 	uint32_t dataLen;
+
+	if (rxBuf.pendingBytes < SLEEPCMD_LEN)
+		return 0;
 
 	dataLen = rxBuf.pendingBytes;
 
@@ -357,6 +362,11 @@ uint32_t checkSleepCMD(rcvMsg_t *rcvMessage)
  * */
 void USART0_RX_IRQHandler(void)
 {
+	uint32_t flag = 0;
+
+	flag = USART_IntGet(uart);
+	USART_IntClear(uart, flag);
+
 	/* Check for RX data valid interrupt */
 	if (uart->IF & USART_IF_RXDATAV) {
 		/* Copy data into RX Buffer */
