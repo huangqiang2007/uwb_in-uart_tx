@@ -36,7 +36,7 @@
 #define MASK(size, shift)   (((1LL << (size)) - 1) << (shift))
 #define BITVAL(value, bit)  ((value & MASK(1,bit)) >> bit)
 #define STRINGIZE2(X)       #X
-#define STRINGIZE(X)        STRINGIZE2(X)
+//#define STRINGIZE(X)        STRINGIZE2(X)
 
 // macros to return the number of bits needed to store a number
 #define NBITS2(n)           ((n&2)?1:0)

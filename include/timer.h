@@ -44,10 +44,12 @@ volatile uint32_t g_wakup_timeout; /* the count of 1ms unit */
 #define IDLE_JUDGE 300000
 volatile uint32_t g_idle_judge;
 
+void timer_init(void);
 void setupTimer0(void);
 void setupTimer1(void);
 extern void Delay_ms(uint32_t ms);
 extern void Delay_us(uint32_t us);
 extern void timerInit(void);
+void delayms(uint32_t ms);
 
 #endif /* INLCUDE_TIMER_H_ */

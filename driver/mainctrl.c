@@ -249,11 +249,18 @@ void sleepSlave(dwDevice_t *dev)
 	static int cnt=0;
 
 	/*
-	 * scan each slave and send sleep command
+	 * scan each slave plus main node, and send sleep command to each one.
 	 * */
-	for (i = 0; i < SLAVE_NUMS; i++) {
-		if ((g_slaveStatus & (1 << i)) == (1 << i)) {
-			ret = TalktoSlave(dev, MAIN_NODE, i + 1, ENUM_SLAVE_SLEEP);
+	for (i = 0; i < SLAVE_NUMS + 1; i++) {
+		if (((g_slaveStatus & (1 << i)) == (1 << i)) || (i == 4)) {
+			/*
+			 * firstly send SLEEP command to 4 slaves, then wait
+			 * a moment and send SLEEP command to main node.
+			 * */
+			if (i == 4)
+				delayms(10);
+
+			ret = TalktoSlave(dev, MANUAL_NODE, i + 1, ENUM_SLAVE_SLEEP);
 			if (ret == 0) {
 				cnt = 0;
 				crc_sum = CalFrameCRC(g_recvSlaveFr.data, FRAME_DATA_LEN);
@@ -264,12 +271,12 @@ void sleepSlave(dwDevice_t *dev)
 				}
 
 				if (g_recvSlaveFr.head0 != 0x55 || g_recvSlaveFr.head1 != 0xaa
-					|| g_recvSlaveFr.crc0 != (crc_sum & 0xff) || g_recvSlaveFr.crc1 != ((crc_sum >> 8) & 0xff)
-					|| g_recvSlaveFr.len == 0)
+					|| g_recvSlaveFr.crc0 != (crc_sum & 0xff) || g_recvSlaveFr.crc1 != ((crc_sum >> 8) & 0xff))
 					continue;
 
-				g_slaveStatus &= ~(1 << i);
-				if ((g_slaveStatus & SLAVE_WKUP_MSK) == 0) {
+				if (i < 4) {
+					g_slaveStatus &= ~(1 << i);
+				} else if ((g_slaveStatus & SLAVE_WKUP_MSK) == 0) {
 					g_cur_mode = DEFAULT_MODE;
 					return;
 				}

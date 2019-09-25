@@ -2,6 +2,7 @@
 #define UARTDRV_H_
 
 #include <stdint.h>
+#include "mainctrl.h"
 
 #define UARTFRAME_LEN_12B 12
 /*
@@ -23,5 +24,6 @@ extern uint8_t uartGetChar(void);
 extern uint32_t uartReadChar(uint8_t *data);
 extern int UartFrameEnqueue(UartFrame *uFrame);
 extern UartFrame* UartFrameDequeue(void);
+uint32_t checkSleepCMD(rcvMsg_t *rcvMessage);
 
 #endif /* UARTDRV_H_ */
