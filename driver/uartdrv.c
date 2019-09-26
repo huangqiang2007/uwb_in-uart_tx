@@ -334,7 +334,9 @@ uint32_t checkSleepCMD(rcvMsg_t *rcvMessage)
 			if (rcvMessage->len == SLEEPCMD_LEN) {
 				if (parseSleepCMD((sleepCMD_t *)rcvMessage->rcvBytes)) {
 					g_cur_mode = MAIN_SLEEPMODE;
+					CORE_CriticalDisableIrq();
 					rxBuf.pendingBytes -= SLEEPCMD_LEN;
+					CORE_CriticalEnableIrq();
 					return i;
 				} else {
 					rcvMessage->searchHeadFlag = false;
@@ -347,7 +349,9 @@ uint32_t checkSleepCMD(rcvMsg_t *rcvMessage)
 	}
 
 	/* Decrement pending byte counter */
+	CORE_CriticalDisableIrq();
 	rxBuf.pendingBytes -= dataLen;
+	CORE_CriticalEnableIrq();
 
 	return i;
 }
