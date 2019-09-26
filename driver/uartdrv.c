@@ -118,7 +118,7 @@ void uartSetup(void)
 	 * */
 	uartInit.enable       = usartDisable;   /* Don't enable UART upon intialization */
 	uartInit.refFreq      = 0;              /* Provide information on reference frequency. When set to 0, the reference frequency is */
-	uartInit.baudrate     = 256000;         /* Baud rate *///115200 transfers to 148720
+	uartInit.baudrate     = 256000;//256000;         /* Baud rate *///115200 transfers to 148720
 	uartInit.oversampling = usartOVS16;     /* Oversampling. Range is 4x, 6x, 8x or 16x */
 	uartInit.databits     = usartDatabits8; /* Number of data bits. Range is 4 to 10 */
 	uartInit.parity       = usartNoParity; /* Parity mode */
@@ -315,6 +315,9 @@ uint32_t checkSleepCMD(rcvMsg_t *rcvMessage)
 {
 	uint32_t i = 0;
 	uint32_t dataLen;
+	uint8_t *str = "here\n";
+	uint8_t *str2 = "here2\n";
+	static int rdi1 = -1, rdi2 = -1;
 
 	if (rxBuf.pendingBytes < SLEEPCMD_LEN)
 		return 0;
@@ -326,17 +329,26 @@ uint32_t checkSleepCMD(rcvMsg_t *rcvMessage)
 		if (rxBuf.data[rxBuf.rdI] == 0x62) {
 			rcvMessage->searchHeadFlag = true;
 			rcvMessage->len = 0;
+			uartPutData(str, 5);
+			if (rdi1 == -1)
+				rdi1 = rxBuf.rdI;
+			else if (rdi2 == -1)
+				rdi2 = rxBuf.rdI;
 		}
 
 		if (rcvMessage->searchHeadFlag) {
-			*(rcvMessage->rcvBytes + rcvMessage->len) = rxBuf.data[rxBuf.rdI];
-			rcvMessage->len++;
+			rcvMessage->rcvBytes[rcvMessage->len++] = rxBuf.data[rxBuf.rdI];
 			if (rcvMessage->len == SLEEPCMD_LEN) {
 				if (parseSleepCMD((sleepCMD_t *)rcvMessage->rcvBytes)) {
 					g_cur_mode = MAIN_SLEEPMODE;
-					CORE_CriticalDisableIrq();
+					NVIC_DisableIRQ(USART0_RX_IRQn);
 					rxBuf.pendingBytes -= SLEEPCMD_LEN;
-					CORE_CriticalEnableIrq();
+					rxBuf.rdI = (rxBuf.rdI + 1) % BUFFERSIZE;
+					i++;
+					NVIC_EnableIRQ(USART0_RX_IRQn);
+					//uartPutData((uint8_t *)&g_recvSlaveFr, sizeof(struct MainCtrlFrame));
+					//uartPutData(str2, 6);
+					rdi1 = rdi2 = -1;
 					return i;
 				} else {
 					rcvMessage->searchHeadFlag = false;
@@ -349,9 +361,11 @@ uint32_t checkSleepCMD(rcvMsg_t *rcvMessage)
 	}
 
 	/* Decrement pending byte counter */
-	CORE_CriticalDisableIrq();
+	NVIC_DisableIRQ(USART0_RX_IRQn);
+	//CORE_CriticalDisableIrq();
 	rxBuf.pendingBytes -= dataLen;
-	CORE_CriticalEnableIrq();
+	//CORE_CriticalEnableIrq();
+	NVIC_EnableIRQ(USART0_RX_IRQn);
 
 	return i;
 }
