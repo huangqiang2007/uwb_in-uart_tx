@@ -25,5 +25,6 @@ extern uint32_t uartReadChar(uint8_t *data);
 extern int UartFrameEnqueue(UartFrame *uFrame);
 extern UartFrame* UartFrameDequeue(void);
 uint32_t checkSleepCMD(rcvMsg_t *rcvMessage);
+void DMAInit(void);
 
 #endif /* UARTDRV_H_ */

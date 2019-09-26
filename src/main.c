@@ -144,6 +144,11 @@ int main(void)
 	timer_init();
 
 	/*
+	 * General init for DMA
+	 * */
+	DMAInit();
+
+	/*
 	 * RS422 Uart init for delivering converted data
 	 * */
 	uartSetup();

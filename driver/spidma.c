@@ -228,12 +228,6 @@ void SPIDMAInit()
 	// Initialize USART1 as SPI slave
 	initUSART1(dwSpiSpeedLow);
 
-	// Initializing the DMA
-	DMA_Init_TypeDef init;
-	init.hprot = 0;                      // Access level/protection not an issue
-	init.controlBlock = dmaControlBlock; // Make sure control block is properly aligned
-	DMA_Init(&init);
-
 	// Setup LDMA channels for transfer across SPI
 	initReceiveDma();
 	initTransferDma();

@@ -84,7 +84,7 @@ out:
 /*
  * Declare a circular buffer structure to use for Rx and Tx queues
  * */
-#define BUFFERSIZE 480
+#define BUFFERSIZE 220
 
 volatile static struct circularBuffer
 {
@@ -99,6 +99,7 @@ volatile static struct circularBuffer
 static USART_TypeDef *uart = USART0;
 static USART_InitAsync_TypeDef uartInit = USART_INITASYNC_DEFAULT;
 
+void UART_DMAConfig(void);
 /*
  * uartSetup function
  */
@@ -137,16 +138,21 @@ void uartSetup(void)
 	 * Prepare UART Rx and Tx interrupts
 	 * */
 	USART_IntClear(uart, _USART_IFC_MASK);
-	USART_IntEnable(uart, USART_IEN_RXDATAV);
+	//USART_IntEnable(uart, USART_IEN_RXDATAV);
 	NVIC_ClearPendingIRQ(USART0_RX_IRQn);
 	NVIC_ClearPendingIRQ(USART0_TX_IRQn);
-	NVIC_EnableIRQ(USART0_RX_IRQn);
+	//NVIC_EnableIRQ(USART0_RX_IRQn);
 	NVIC_EnableIRQ(USART0_TX_IRQn);
 
 	/*
 	 * Enable I/O pins at UART1 location #2
 	 * */
 	uart->ROUTE = USART_ROUTE_RXPEN | USART_ROUTE_TXPEN | USART_ROUTE_LOCATION_LOC0;
+
+	/*
+	 * config DMA for USART0
+	 * */
+	UART_DMAConfig();
 
 	/*
 	 * Enable UART
@@ -348,7 +354,7 @@ uint32_t checkSleepCMD(rcvMsg_t *rcvMessage)
 					i++;
 					NVIC_EnableIRQ(USART0_RX_IRQn);
 					//uartPutData((uint8_t *)&g_recvSlaveFr, sizeof(struct MainCtrlFrame));
-					//uartPutData(str2, 6);
+					uartPutData(str2, 6);
 					rdi1 = rdi2 = -1;
 					return i;
 				} else {
@@ -371,6 +377,9 @@ uint32_t checkSleepCMD(rcvMsg_t *rcvMessage)
 	return i;
 }
 
+/*
+ * the below logic is for UART-Rx DMA feature.
+ * */
 #if ( (DMA_CHAN_COUNT > 0) && (DMA_CHAN_COUNT <= 4) )
 #define DMACTRL_CH_CNT      4
 #define DMACTRL_ALIGNMENT   128
@@ -391,16 +400,16 @@ uint32_t checkSleepCMD(rcvMsg_t *rcvMessage)
 SL_ALIGN(DMACTRL_ALIGNMENT)
 DMA_DESCRIPTOR_TypeDef dmaControlBlock1[DMACTRL_CH_CNT * 2] SL_ATTRIBUTE_ALIGN(DMACTRL_ALIGNMENT);
 
-#define CMD_LEN 22
+#define CMD_LEN 1
 uint8_t g_primaryResultBuffer[CMD_LEN] = {0}, g_alterResultBuffer[CMD_LEN] = {0};
 DMA_CB_TypeDef dma_uart_cb;
 
-void DMA_UART_callback(unsigned int channel, bool primary, void *user)
+void UART_DMA_callback(unsigned int channel, bool primary, void *user)
 {
 	if (primary == true)
 		memcpy((void *)&rxBuf.data[rxBuf.wrI], (void *)g_primaryResultBuffer, CMD_LEN);
 	else
-		memcpy((void *)&rxBuf.data[rxBuf.wrI], (void *)g_alterResultBuffer, CMD_LEN);;
+		memcpy((void *)&rxBuf.data[rxBuf.wrI], (void *)g_alterResultBuffer, CMD_LEN);
 
 	rxBuf.wrI = (rxBuf.wrI + CMD_LEN) % BUFFERSIZE;
 	rxBuf.pendingBytes += CMD_LEN;
@@ -414,15 +423,13 @@ void DMA_UART_callback(unsigned int channel, bool primary, void *user)
 		NULL,
 		CMD_LEN - 1,
 		false);
+
+	USART0->CMD |= USART_CMD_RXEN;
 }
 
-void DMAConfig(void)
+void DMAInit(void)
 {
 	DMA_Init_TypeDef dmaInit;
-	DMA_CfgDescr_TypeDef descrCfg;
-	DMA_CfgChannel_TypeDef chnlCfg;
-
-	CMU_ClockEnable(cmuClock_DMA, true);
 
 	/*
 	* Configure general DMA issues
@@ -430,11 +437,19 @@ void DMAConfig(void)
 	dmaInit.hprot = 0;
 	dmaInit.controlBlock = dmaControlBlock1;
 	DMA_Init(&dmaInit);
+}
+
+void UART_DMAConfig(void)
+{
+	DMA_CfgDescr_TypeDef descrCfg;
+	DMA_CfgChannel_TypeDef chnlCfg;
+
+	CMU_ClockEnable(cmuClock_DMA, true);
 
 	/*
 	* Configure DMA channel used
 	* */
-	dma_uart_cb.cbFunc = DMA_UART_callback;
+	dma_uart_cb.cbFunc = UART_DMA_callback;
 	dma_uart_cb.userPtr = NULL;
 
 	chnlCfg.highPri = false;
