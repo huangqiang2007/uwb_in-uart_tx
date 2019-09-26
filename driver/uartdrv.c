@@ -5,6 +5,7 @@
 #include "em_device.h"
 #include "em_usart.h"
 #include "em_gpio.h"
+#include "em_dma.h"
 #include "main.h"
 #include "uartdrv.h"
 #include "mainctrl.h"
@@ -354,6 +355,101 @@ uint32_t checkSleepCMD(rcvMsg_t *rcvMessage)
 	CORE_CriticalEnableIrq();
 
 	return i;
+}
+
+#if ( (DMA_CHAN_COUNT > 0) && (DMA_CHAN_COUNT <= 4) )
+#define DMACTRL_CH_CNT      4
+#define DMACTRL_ALIGNMENT   128
+
+#elif ( (DMA_CHAN_COUNT > 4) && (DMA_CHAN_COUNT <= 8) )
+#define DMACTRL_CH_CNT      8
+#define DMACTRL_ALIGNMENT   256
+
+#elif ( (DMA_CHAN_COUNT > 8) && (DMA_CHAN_COUNT <= 12) )
+#define DMACTRL_CH_CNT      16
+#define DMACTRL_ALIGNMENT   256
+
+#else
+#error "Unsupported DMA channel count (dmactrl.c)."
+#endif
+
+/** DMA control block array, requires proper alignment. */
+SL_ALIGN(DMACTRL_ALIGNMENT)
+DMA_DESCRIPTOR_TypeDef dmaControlBlock1[DMACTRL_CH_CNT * 2] SL_ATTRIBUTE_ALIGN(DMACTRL_ALIGNMENT);
+
+#define CMD_LEN 22
+uint8_t g_primaryResultBuffer[CMD_LEN] = {0}, g_alterResultBuffer[CMD_LEN] = {0};
+DMA_CB_TypeDef dma_uart_cb;
+
+void DMA_UART_callback(unsigned int channel, bool primary, void *user)
+{
+	if (primary == true)
+		memcpy((void *)&rxBuf.data[rxBuf.wrI], (void *)g_primaryResultBuffer, CMD_LEN);
+	else
+		memcpy((void *)&rxBuf.data[rxBuf.wrI], (void *)g_alterResultBuffer, CMD_LEN);;
+
+	rxBuf.wrI = (rxBuf.wrI + CMD_LEN) % BUFFERSIZE;
+	rxBuf.pendingBytes += CMD_LEN;
+
+	/* Re-activate the DMA */
+	DMA_RefreshPingPong(
+		channel,
+		primary,
+		false,
+		NULL,
+		NULL,
+		CMD_LEN - 1,
+		false);
+}
+
+void DMAConfig(void)
+{
+	DMA_Init_TypeDef dmaInit;
+	DMA_CfgDescr_TypeDef descrCfg;
+	DMA_CfgChannel_TypeDef chnlCfg;
+
+	CMU_ClockEnable(cmuClock_DMA, true);
+
+	/*
+	* Configure general DMA issues
+	* */
+	dmaInit.hprot = 0;
+	dmaInit.controlBlock = dmaControlBlock1;
+	DMA_Init(&dmaInit);
+
+	/*
+	* Configure DMA channel used
+	* */
+	dma_uart_cb.cbFunc = DMA_UART_callback;
+	dma_uart_cb.userPtr = NULL;
+
+	chnlCfg.highPri = false;
+	chnlCfg.enableInt = true;
+	chnlCfg.select = DMAREQ_USART0_RXDATAV;
+	chnlCfg.cb = &dma_uart_cb;
+	DMA_CfgChannel(DMA_CHANNEL, &chnlCfg);
+
+	/*
+	* one byte per transfer
+	* */
+	descrCfg.dstInc = dmaDataInc1;
+	descrCfg.srcInc = dmaDataIncNone;
+	descrCfg.size = dmaDataSize1;
+	descrCfg.arbRate = dmaArbitrate1;
+	descrCfg.hprot = 0;
+	DMA_CfgDescr(DMA_CHANNEL, true, &descrCfg);
+	DMA_CfgDescr(DMA_CHANNEL, false, &descrCfg);
+
+	// Start DMA
+	DMA_ActivatePingPong(
+		DMA_CHANNEL,
+		false,
+		(void *)&g_primaryResultBuffer, // primary destination
+		(void *)&(USART0->RXDATA), // primary source
+		CMD_LEN - 1,
+		(void *)&g_alterResultBuffer, // alternate destination
+		(void *)&(USART0->RXDATA), // alternate source
+		CMD_LEN - 1);
 }
 
 /*
