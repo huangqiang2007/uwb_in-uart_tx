@@ -1671,17 +1671,23 @@ void dwSendData(dwDevice_t *dev, uint8_t data[], uint32_t len)
  * */
 void dwRecvData(dwDevice_t *dev)
 {
-	int len = 0;
+	int len = 0, loop = 3;
 
-	memset((void *)&g_dwMacFrameRecv, 0x00, sizeof(g_dwMacFrameRecv));
-//	dwNewReceive(dev);
-//	dwStartReceive(dev);
+	memset((void *)&g_uart_tx_buf, 0x00, sizeof(g_uart_tx_buf));
 	len = dwGetDataLength(dev);
-//	dwGetData(dev, (uint8_t *)&g_dwMacFrameRecv, len);
-//	memcpy((uint8_t *)&g_recvSlaveFr, g_dwMacFrameRecv.Payload, sizeof(g_recvSlaveFr));
-	dwGetData(dev, (uint8_t *)&g_recvSlaveFr, len);
+	dwGetData(dev, (uint8_t *)&g_uart_tx_buf, len);
 
-	g_dataRecvDone = true;
+	g_uartSendDone = false;
+	USART_Enable(USART0, usartEnableTx);
+
+	while (g_uartSendDone == false) {
+		if (--loop == 0)
+			break;
+		delayms(1);
+	}
+
+	dwNewReceive(&g_dwDev);
+	dwStartReceive(&g_dwDev);
 }
 
 void dwSentData(dwDevice_t *dev)

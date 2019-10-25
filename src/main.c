@@ -116,7 +116,6 @@ void spiDMA_test(dwDevice_t *dev)
 	}
 }
 int main(void)
-
 {
 	/*
 	 * Chip errata
@@ -187,6 +186,7 @@ int main(void)
 	dwStartReceive(&g_dwDev);
 
 	while (1) {
+#if 0
 		/*
 		 * if receive system sleep command, switch to
 		 * MAIN_SLEEPMODE
@@ -218,9 +218,11 @@ int main(void)
 			default:
 				g_cur_mode = MAIN_WKUPMODE;
 				break;
+
 		}
 
 		Delay_ms(1);
+#endif
 	}
 }
 #endif

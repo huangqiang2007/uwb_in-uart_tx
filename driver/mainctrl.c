@@ -22,7 +22,7 @@ void globalInit(void)
 	memset((void *)&g_dwDev , 0x00, sizeof(g_dwDev));
 	memset((void *)&g_dwMacFrameSend, 0x00, sizeof(g_dwMacFrameSend));
 	memset((void *)&g_dwMacFrameRecv, 0x00, sizeof(g_dwMacFrameRecv));
-	memset((void *)&g_rcvMessage, 0x00, sizeof(g_rcvMessage));
+	//memset((void *)&g_rcvMessage, 0x00, sizeof(g_rcvMessage));
 	g_dataRecvDone = false;
 	g_slaveWkup = false;
 	g_cur_mode = MAIN_IDLEMODE;

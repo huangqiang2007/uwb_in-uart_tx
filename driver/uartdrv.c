@@ -138,11 +138,11 @@ void uartSetup(void)
 	 * Prepare UART Rx and Tx interrupts
 	 * */
 	USART_IntClear(uart, _USART_IFC_MASK);
-	//USART_IntEnable(uart, USART_IEN_RXDATAV);
+	USART_IntEnable(uart, USART_IEN_RXDATAV);
 	NVIC_ClearPendingIRQ(USART0_RX_IRQn);
-	NVIC_ClearPendingIRQ(USART0_TX_IRQn);
-	//NVIC_EnableIRQ(USART0_RX_IRQn);
-	NVIC_EnableIRQ(USART0_TX_IRQn);
+	//NVIC_ClearPendingIRQ(USART0_TX_IRQn);
+	NVIC_EnableIRQ(USART0_RX_IRQn);
+	//NVIC_EnableIRQ(USART0_TX_IRQn);
 
 	/*
 	 * Enable I/O pins at UART1 location #2
@@ -157,7 +157,7 @@ void uartSetup(void)
 	/*
 	 * Enable UART
 	 * */
-	USART_Enable(uart, usartEnable);
+	//USART_Enable(uart, usartEnableTx);
 }
 
 
@@ -400,12 +400,24 @@ uint32_t checkSleepCMD(rcvMsg_t *rcvMessage)
 SL_ALIGN(DMACTRL_ALIGNMENT)
 DMA_DESCRIPTOR_TypeDef dmaControlBlock1[DMACTRL_CH_CNT * 2] SL_ATTRIBUTE_ALIGN(DMACTRL_ALIGNMENT);
 
-#define CMD_LEN 1
+#define CMD_LEN 22
 uint8_t g_primaryResultBuffer[CMD_LEN] = {0}, g_alterResultBuffer[CMD_LEN] = {0};
 DMA_CB_TypeDef dma_uart_cb;
 
 void UART_DMA_callback(unsigned int channel, bool primary, void *user)
 {
+	g_uartSendDone = true;
+	USART_Enable(USART0, usartDisable);
+
+	DMA_ActivateBasic(
+		DMA_CHANNEL,
+		true,
+		false,
+		(void *)&(USART0->TXDATA), // primary destination
+		(void *)&g_uart_tx_buf, // primary source
+		CMD_LEN - 1
+		);
+#if 0
 	if (primary == true)
 		memcpy((void *)&rxBuf.data[rxBuf.wrI], (void *)g_primaryResultBuffer, CMD_LEN);
 	else
@@ -425,6 +437,7 @@ void UART_DMA_callback(unsigned int channel, bool primary, void *user)
 		false);
 
 	USART0->CMD |= USART_CMD_RXEN;
+#endif
 }
 
 void DMAInit(void)
@@ -454,21 +467,22 @@ void UART_DMAConfig(void)
 
 	chnlCfg.highPri = false;
 	chnlCfg.enableInt = true;
-	chnlCfg.select = DMAREQ_USART0_RXDATAV;
+	chnlCfg.select = DMAREQ_USART0_TXBL;
 	chnlCfg.cb = &dma_uart_cb;
 	DMA_CfgChannel(DMA_CHANNEL, &chnlCfg);
 
 	/*
 	* one byte per transfer
 	* */
-	descrCfg.dstInc = dmaDataInc1;
-	descrCfg.srcInc = dmaDataIncNone;
+	descrCfg.dstInc = dmaDataIncNone;
+	descrCfg.srcInc = dmaDataInc1;
 	descrCfg.size = dmaDataSize1;
 	descrCfg.arbRate = dmaArbitrate1;
 	descrCfg.hprot = 0;
 	DMA_CfgDescr(DMA_CHANNEL, true, &descrCfg);
-	DMA_CfgDescr(DMA_CHANNEL, false, &descrCfg);
 
+#if 0
+	DMA_CfgDescr(DMA_CHANNEL, false, &descrCfg);
 	// Start DMA
 	DMA_ActivatePingPong(
 		DMA_CHANNEL,
@@ -479,6 +493,15 @@ void UART_DMAConfig(void)
 		(void *)&g_alterResultBuffer, // alternate destination
 		(void *)&(USART0->RXDATA), // alternate source
 		CMD_LEN - 1);
+#endif
+	DMA_ActivateBasic(
+		DMA_CHANNEL,
+		true,
+		false,
+		(void *)&(USART0->TXDATA), // primary destination
+		(void *)&g_uart_tx_buf, // primary source
+		CMD_LEN - 1
+		);
 }
 
 /*

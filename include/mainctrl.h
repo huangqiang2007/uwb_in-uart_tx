@@ -91,11 +91,14 @@ typedef struct sleepCMD {
 struct MainCtrlFrame g_mainCtrlFr, g_recvSlaveFr;
 dwMacFrame_t g_dwMacFrameSend, g_dwMacFrameRecv;
 //struct RS422DataFrame g_RS422DataFr;
-rcvMsg_t g_rcvMessage;
+//rcvMsg_t g_rcvMessage;
+#define UART_TX_BUF_SZ 200
+uint8_t g_uart_tx_buf[UART_TX_BUF_SZ];
 
 volatile int8_t g_cur_mode;
 volatile int8_t g_slaveWkup;
 volatile bool g_dataRecvDone;
+volatile bool g_uartSendDone;
 volatile bool g_dataRecvFail;
 
 extern void globalInit(void);
