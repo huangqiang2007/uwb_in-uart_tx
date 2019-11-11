@@ -81,19 +81,7 @@ out:
 	return uFrame;
 }
 
-/*
- * Declare a circular buffer structure to use for Rx and Tx queues
- * */
-#define BUFFERSIZE 220
-
-volatile static struct circularBuffer
-{
-  uint8_t  data[BUFFERSIZE];  /* data buffer */
-  uint32_t rdI;               /* read index */
-  uint32_t wrI;               /* write index */
-  uint32_t pendingBytes;      /* count of how many bytes are not yet handled */
-  bool     overflow;          /* buffer overflow indicator */
-} rxBuf, txBuf = { {0}, 0, 0, 0, false };
+volatile struct circularBuffer rxBuf = { {0}, 0, 0, 0, false }, txBuf = { {0}, 0, 0, 0, false };
 
 /* Setup UART0 in async mode for RS232*/
 static USART_TypeDef *uart = USART0;
@@ -414,10 +402,10 @@ void UART_DMA_callback(unsigned int channel, bool primary, void *user)
 		true,
 		false,
 		(void *)&(USART0->TXDATA), // primary destination
-		(void *)&g_uart_tx_buf, // primary source
+		(void *)&rxBuf.data[rxBuf.rdI], // primary source
 		CMD_LEN - 1
 		);
-#if 0
+#if 1
 	if (primary == true)
 		memcpy((void *)&rxBuf.data[rxBuf.wrI], (void *)g_primaryResultBuffer, CMD_LEN);
 	else
@@ -494,14 +482,14 @@ void UART_DMAConfig(void)
 		(void *)&(USART0->RXDATA), // alternate source
 		CMD_LEN - 1);
 #endif
-	DMA_ActivateBasic(
-		DMA_CHANNEL,
-		true,
-		false,
-		(void *)&(USART0->TXDATA), // primary destination
-		(void *)&g_uart_tx_buf, // primary source
-		CMD_LEN - 1
-		);
+//	DMA_ActivateBasic(
+//		DMA_CHANNEL,
+//		true,
+//		false,
+//		(void *)&(USART0->TXDATA), // primary destination
+//		(void *)&rxBuf.data[0], // primary source
+//		CMD_LEN - 1
+//		);
 }
 
 /*

@@ -6,6 +6,23 @@
 #include "libdw1000Types.h"
 
 
+/*
+ * Declare a circular buffer structure to use for Rx and Tx queues
+ * */
+#define BUFFERSIZE 220
+
+#define UART_TX_DMA_LEN 22
+
+struct circularBuffer
+{
+  uint8_t  data[BUFFERSIZE];  /* data buffer */
+  uint32_t rdI;               /* read index */
+  uint32_t wrI;               /* write index */
+  uint32_t pendingBytes;      /* count of how many bytes are not yet handled */
+  bool     overflow;          /* buffer overflow indicator */
+};
+extern volatile struct circularBuffer rxBuf;
+
 #define SLAVE_NUMS 4
 
 enum {MAIN_IDLEMODE=0, MAIN_WKUPMODE, MAIN_SAMPLEMODE, MAIN_SLEEPMODE, DEFAULT_MODE};
@@ -93,7 +110,7 @@ dwMacFrame_t g_dwMacFrameSend, g_dwMacFrameRecv;
 //struct RS422DataFrame g_RS422DataFr;
 //rcvMsg_t g_rcvMessage;
 #define UART_TX_BUF_SZ 200
-uint8_t g_uart_tx_buf[UART_TX_BUF_SZ];
+//uint8_t g_uart_tx_buf[UART_TX_BUF_SZ];
 
 volatile int8_t g_cur_mode;
 volatile int8_t g_slaveWkup;

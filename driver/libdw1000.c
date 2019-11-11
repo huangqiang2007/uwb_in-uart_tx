@@ -1671,19 +1671,42 @@ void dwSendData(dwDevice_t *dev, uint8_t data[], uint32_t len)
  * */
 void dwRecvData(dwDevice_t *dev)
 {
-	int len = 0, loop = 3;
+	int len = 0, loop = 3, freespace = 0;
 
-	memset((void *)&g_uart_tx_buf, 0x00, sizeof(g_uart_tx_buf));
+	/*
+	 * the length of data UWB received
+	 * */
 	len = dwGetDataLength(dev);
-	dwGetData(dev, (uint8_t *)&g_uart_tx_buf, len);
 
-	g_uartSendDone = false;
-	USART_Enable(USART0, usartEnableTx);
+	/*
+	 * the free space in 'rxBuf.data' buffer
+	 * */
+	freespace = BUFFERSIZE - (rxBuf.rdI + BUFFERSIZE - rxBuf.wrI) % BUFFERSIZE;
 
-	while (g_uartSendDone == false) {
-		if (--loop == 0)
-			break;
-		delayms(1);
+	if (freespace > len) {
+		if ((rxBuf.wrI > rxBuf.rdI && BUFFERSIZE - rxBuf.wrI > len)
+			|| (rxBuf.rdI > rxBuf.wrI)){
+			dwGetData(dev, (uint8_t *)&rxBuf.data[rxBuf.wrI], len);
+		} else {
+			unsigned char uart_tx_buf[128] = {0};
+			char firstCopy = BUFFERSIZE - rxBuf.wrI;
+
+			dwGetData(dev, (uint8_t *)&uart_tx_buf, len);
+
+			/*
+			 * It copy some part chars to the buffer tail space, then the 'rxBuf.wrI' equals BUFFERSIZE.
+			 * Next copy the remaining chars in g_uart_tx_buf to the begin of 'rxBuf' accordingly.
+			 * */
+			memcpy((uint8_t *)&rxBuf.data[rxBuf.wrI], (uint8_t *)&uart_tx_buf, firstCopy);
+			rxBuf.wrI = 0;
+			memcpy((uint8_t *)&rxBuf.data[rxBuf.wrI], (uint8_t *)&uart_tx_buf + firstCopy, len - firstCopy);
+			rxBuf.wrI += len - firstCopy;
+		}
+	} else {
+		/*
+		 * error check, if it's not quickly enough to buffer UWB's received bytes.
+		 * */
+		while(1);
 	}
 
 	dwNewReceive(&g_dwDev);

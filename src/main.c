@@ -19,14 +19,6 @@
 
 void clockConfig(void)
 {
-	CMU_ClockEnable(cmuClock_GPIO, true);
-	CMU_ClockEnable(cmuClock_TIMER0, true);
-	CMU_ClockEnable(cmuClock_TIMER1, true);
-	timer_init();
-	Delay_ms(5);
-	GPIO_PinModeSet(gpioPortA, 1, gpioModePushPull, 1);
-	Delay_ms(5);
-
 	SystemCoreClockUpdate();
 
 	/*
@@ -186,6 +178,20 @@ int main(void)
 	dwStartReceive(&g_dwDev);
 
 	while (1) {
+		if ((rxBuf.wrI + BUFFERSIZE - rxBuf.rdI) % BUFFERSIZE > 0) {
+			if (g_uartSendDone) {
+
+			} else {
+				DMA_ActivateBasic(
+					DMA_CHANNEL,
+					true,
+					false,
+					(void *)&(USART0->TXDATA), // primary destination
+					(void *)&rxBuf.data[rxBuf.rdI], // primary source
+					UART_TX_DMA_LEN - 1
+					);
+			}
+		}
 #if 0
 		/*
 		 * if receive system sleep command, switch to
