@@ -1688,6 +1688,7 @@ void dwRecvData(dwDevice_t *dev)
 		if ((rxBuf.wrI > rxBuf.rdI && BUFFERSIZE - rxBuf.wrI > len)
 			|| (rxBuf.rdI > rxBuf.wrI)) {
 			dwGetData(dev, (uint8_t *)&rxBuf.data[rxBuf.wrI], len);
+			rxBuf.wrI = rxBuf.wrI + len;
 		} else {
 			char firstCopy = BUFFERSIZE - rxBuf.wrI;
 
