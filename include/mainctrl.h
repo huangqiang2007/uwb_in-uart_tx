@@ -9,7 +9,7 @@
 /*
  * Declare a circular buffer structure to use for Rx and Tx queues
  * */
-#define BUFFERSIZE 220
+#define BUFFERSIZE 600
 
 #define UART_TX_DMA_LEN 22
 
@@ -117,6 +117,8 @@ volatile int8_t g_slaveWkup;
 volatile bool g_dataRecvDone;
 volatile bool g_uartSendDone;
 volatile bool g_dataRecvFail;
+volatile bool g_uartDMAStarted;
+volatile bool g_uartDMATransferNum;
 
 extern void globalInit(void);
 extern uint16_t CalFrameCRC(uint8_t data[], int len);

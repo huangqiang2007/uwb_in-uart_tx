@@ -26,6 +26,7 @@ void globalInit(void)
 	g_dataRecvDone = false;
 	g_slaveWkup = false;
 	g_cur_mode = MAIN_IDLEMODE;
+	g_uartDMAStarted = false;
 }
 
 void powerADandUWB(uint8_t master)

@@ -4,6 +4,7 @@
 #include "em_cmu.h"
 #include "em_adc.h"
 #include "em_cmu.h"
+#include "em_core.h"
 #include "timer.h"
 #include "udelay.h"
 #include "hal-config.h"
@@ -153,12 +154,6 @@ int main(void)
 	//spiDMA_test(&g_dwDev);
 
 	/*
-	 * config one DMA channel for transferring ADC sample results
-	 * to specific RAM buffer.
-	 * */
-	//DMAConfig();
-
-	/*
 	 * DW100 wireless device init
 	 * */
 	GPIO_PinModeSet(gpioPortC, 13, gpioModePushPull, 1);
@@ -178,20 +173,7 @@ int main(void)
 	dwStartReceive(&g_dwDev);
 
 	while (1) {
-		if ((rxBuf.wrI + BUFFERSIZE - rxBuf.rdI) % BUFFERSIZE > 0) {
-			if (g_uartSendDone) {
-
-			} else {
-				DMA_ActivateBasic(
-					DMA_CHANNEL,
-					true,
-					false,
-					(void *)&(USART0->TXDATA), // primary destination
-					(void *)&rxBuf.data[rxBuf.rdI], // primary source
-					UART_TX_DMA_LEN - 1
-					);
-			}
-		}
+		CheckUARTTx();
 #if 0
 		/*
 		 * if receive system sleep command, switch to

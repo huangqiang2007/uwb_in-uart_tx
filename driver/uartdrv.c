@@ -388,24 +388,84 @@ uint32_t checkSleepCMD(rcvMsg_t *rcvMessage)
 SL_ALIGN(DMACTRL_ALIGNMENT)
 DMA_DESCRIPTOR_TypeDef dmaControlBlock1[DMACTRL_CH_CNT * 2] SL_ATTRIBUTE_ALIGN(DMACTRL_ALIGNMENT);
 
+#if 0
 #define CMD_LEN 22
 uint8_t g_primaryResultBuffer[CMD_LEN] = {0}, g_alterResultBuffer[CMD_LEN] = {0};
+#endif
+
 DMA_CB_TypeDef dma_uart_cb;
+
+/*
+ * starts the UART-tx in UART DMA done callback function if there is new data in rxBuf,
+ * in order to more quickly transferring the data.
+ * */
+void TryQuickUART_Tx(void)
+{
+	if ((rxBuf.wrI + BUFFERSIZE - rxBuf.rdI) % BUFFERSIZE > 0) {
+		if (!g_uartDMAStarted) {
+			if (rxBuf.wrI > rxBuf.rdI) {
+				g_uartDMATransferNum = rxBuf.wrI - rxBuf.rdI;
+			} else {
+				g_uartDMATransferNum = BUFFERSIZE - rxBuf.rdI;
+			}
+
+			DMA_ActivateBasic(
+				DMA_CHANNEL,
+				true,
+				false,
+				(void *)&(USART0->TXDATA), // primary destination
+				(void *)&rxBuf.data[rxBuf.rdI], // primary source
+				g_uartDMATransferNum - 1
+				);
+
+			USART_Enable(USART0, usartEnableTx);
+			g_uartDMAStarted = true;
+		}
+	}
+}
+
+/*
+ * normally check if there is new data in rxBuf within the main loop of main function.
+ * */
+void CheckUARTTx(void)
+{
+	if ((rxBuf.wrI + BUFFERSIZE - rxBuf.rdI) % BUFFERSIZE > 0) {
+		CORE_CriticalDisableIrq();
+		if (!g_uartDMAStarted) {
+			if (rxBuf.wrI > rxBuf.rdI) {
+				g_uartDMATransferNum = rxBuf.wrI - rxBuf.rdI;
+			} else {
+				g_uartDMATransferNum = BUFFERSIZE - rxBuf.rdI;
+			}
+
+			DMA_ActivateBasic(
+				DMA_CHANNEL,
+				true,
+				false,
+				(void *)&(USART0->TXDATA), // primary destination
+				(void *)&rxBuf.data[rxBuf.rdI], // primary source
+				g_uartDMATransferNum - 1
+				);
+
+			USART_Enable(USART0, usartEnableTx);
+			g_uartDMAStarted = true;
+		}
+		CORE_CriticalEnableIrq();
+	}
+}
 
 void UART_DMA_callback(unsigned int channel, bool primary, void *user)
 {
-	g_uartSendDone = true;
-	USART_Enable(USART0, usartDisable);
+	/*
+	 * update 'rxBuf.rdI' offset
+	 * */
+	rxBuf.rdI = (rxBuf.rdI + g_uartDMATransferNum) % BUFFERSIZE;
+	g_uartDMATransferNum = 0;
+	g_uartDMAStarted = false;
 
-	DMA_ActivateBasic(
-		DMA_CHANNEL,
-		true,
-		false,
-		(void *)&(USART0->TXDATA), // primary destination
-		(void *)&rxBuf.data[rxBuf.rdI], // primary source
-		CMD_LEN - 1
-		);
-#if 1
+	TryQuickUART_Tx();
+
+#if 0
 	if (primary == true)
 		memcpy((void *)&rxBuf.data[rxBuf.wrI], (void *)g_primaryResultBuffer, CMD_LEN);
 	else

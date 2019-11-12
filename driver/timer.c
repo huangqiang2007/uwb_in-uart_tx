@@ -122,7 +122,7 @@ void timer_init(void)
 }
 
 /*
- * precondition: timer0's interrupt interval is 1ms
+ * precondition: timer0's interrupt interval is 1Ms
  * */
 void delayms(uint32_t ms)
 {
