@@ -1682,10 +1682,13 @@ void dwRecvData(dwDevice_t *dev)
 	/*
 	 * the free space in 'rxBuf.data' buffer
 	 * */
-	freespace = BUFFERSIZE - (rxBuf.rdI + BUFFERSIZE - rxBuf.wrI) % BUFFERSIZE;
+	if (rxBuf.rdI == rxBuf.wrI && rxBuf.rdI == 0)
+		freespace = BUFFERSIZE;
+	else
+		freespace = (rxBuf.rdI + BUFFERSIZE - rxBuf.wrI) % BUFFERSIZE;
 
 	if (freespace > len) {
-		if ((rxBuf.wrI > rxBuf.rdI && BUFFERSIZE - rxBuf.wrI > len)
+		if ((rxBuf.wrI >= rxBuf.rdI && BUFFERSIZE - rxBuf.wrI > len)
 			|| (rxBuf.rdI > rxBuf.wrI)) {
 			dwGetData(dev, (uint8_t *)&rxBuf.data[rxBuf.wrI], len);
 			rxBuf.wrI = rxBuf.wrI + len;

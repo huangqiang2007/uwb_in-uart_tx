@@ -20,6 +20,14 @@
 
 void clockConfig(void)
 {
+	CMU_ClockEnable(cmuClock_GPIO, true);
+	CMU_ClockEnable(cmuClock_TIMER0, true);
+	CMU_ClockEnable(cmuClock_TIMER1, true);
+	timer_init();
+	Delay_ms(5);
+	GPIO_PinModeSet(gpioPortA, 1, gpioModePushPull, 1);
+	Delay_ms(5);
+
 	SystemCoreClockUpdate();
 
 	/*
@@ -173,7 +181,9 @@ int main(void)
 	dwStartReceive(&g_dwDev);
 
 	while (1) {
-		CheckUARTTx();
+		//CheckUARTTx();
+
+		//uartPutData("test\n", 5);
 #if 0
 		/*
 		 * if receive system sleep command, switch to
