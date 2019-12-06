@@ -887,6 +887,7 @@ bool dwIsReceiveDone(dwDevice_t* dev) {
 }
 
 bool dwIsReceiveFailed(dwDevice_t *dev) {
+	bool ret = false;
 	bool ldeErr = getBit(dev->sysstatus, LEN_SYS_STATUS, LDEERR_BIT);
 	bool rxCRCErr = getBit(dev->sysstatus, LEN_SYS_STATUS, RXFCE_BIT);
 	bool rxHeaderErr = getBit(dev->sysstatus, LEN_SYS_STATUS, RXPHE_BIT);
@@ -896,7 +897,11 @@ bool dwIsReceiveFailed(dwDevice_t *dev) {
 	bool rxSfdto = getBit(dev->sysstatus, LEN_SYS_STATUS, RXSFDTO_BIT);
 	bool affrej = getBit(dev->sysstatus, LEN_SYS_STATUS, AFFREJ_BIT);
 
-	return (ldeErr || rxCRCErr || rxHeaderErr || rxDecodeErr || rxSfdto || affrej);
+	ret = (ldeErr || rxCRCErr || rxHeaderErr || rxDecodeErr || rxSfdto || affrej);
+	if (ret == true)
+		return ret;
+
+	return ret;
 }
 
 bool dwIsReceiveTimeout(dwDevice_t* dev) {
@@ -1682,12 +1687,12 @@ void dwRecvData(dwDevice_t *dev)
 	/*
 	 * the free space in 'rxBuf.data' buffer
 	 * */
-	if (rxBuf.rdI == rxBuf.wrI && rxBuf.rdI == 0)
+	if (rxBuf.rdI == rxBuf.wrI)
 		freespace = BUFFERSIZE;
 	else
 		freespace = (rxBuf.rdI + BUFFERSIZE - rxBuf.wrI) % BUFFERSIZE;
 
-	if (freespace > len) {
+	if (freespace >= len) {
 		if ((rxBuf.wrI >= rxBuf.rdI && BUFFERSIZE - rxBuf.wrI > len)
 			|| (rxBuf.rdI > rxBuf.wrI)) {
 			dwGetData(dev, (uint8_t *)&rxBuf.data[rxBuf.wrI], len);
@@ -1706,6 +1711,8 @@ void dwRecvData(dwDevice_t *dev)
 			memcpy((uint8_t *)&rxBuf.data[rxBuf.wrI], (uint8_t *)&uart_tx_buf + firstCopy, len - firstCopy);
 			rxBuf.wrI += len - firstCopy;
 		}
+
+		rxBuf.pendingBytes += len;
 	} else {
 		dwGetData(dev, (uint8_t *)&uart_tx_buf, len);
 		/*
@@ -1714,6 +1721,12 @@ void dwRecvData(dwDevice_t *dev)
 		while(1);
 	}
 
+	/*
+	 * reach here, it indicates this node has received data coming from main node.
+	 * */
+	dwSendData(&g_dwDev, "recv", 4);
+
+	//Delay_ms(5);
 	dwNewReceive(&g_dwDev);
 	dwStartReceive(&g_dwDev);
 }

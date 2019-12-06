@@ -118,7 +118,7 @@ volatile bool g_dataRecvDone;
 volatile bool g_uartSendDone;
 volatile bool g_dataRecvFail;
 volatile bool g_uartDMAStarted;
-volatile bool g_uartDMATransferNum;
+volatile int32_t g_uartDMATransferNum;
 
 extern void globalInit(void);
 extern uint16_t CalFrameCRC(uint8_t data[], int len);

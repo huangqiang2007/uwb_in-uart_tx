@@ -181,7 +181,7 @@ int main(void)
 	dwStartReceive(&g_dwDev);
 
 	while (1) {
-		//CheckUARTTx();
+		CheckUARTTx();
 
 		//uartPutData("test\n", 5);
 #if 0

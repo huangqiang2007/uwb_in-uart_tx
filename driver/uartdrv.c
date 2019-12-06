@@ -10,6 +10,7 @@
 #include "uartdrv.h"
 #include "mainctrl.h"
 #include "string.h"
+#include "libdw1000.h"
 
 #define UART_FRAMR_QUEUE_LEN_10 10
 
@@ -429,14 +430,33 @@ void TryQuickUART_Tx(void)
  * */
 void CheckUARTTx(void)
 {
-	if ((rxBuf.wrI + BUFFERSIZE - rxBuf.rdI) % BUFFERSIZE > 0) {
-		CORE_CriticalDisableIrq();
+	static int32_t pengdingBytesNull_cnt = 0;
+
+	if (rxBuf.pendingBytes == 0) {
+		if (pengdingBytesNull_cnt++ > 100000) {
+			dwClearReceiveStatus(&g_dwDev);
+			dwRxSoftReset(&g_dwDev);
+			pengdingBytesNull_cnt = 0;
+
+			dwDeviceInit(&g_dwDev);
+			dwNewReceive(&g_dwDev);
+			dwStartReceive(&g_dwDev);
+		}
+	} else {
+		pengdingBytesNull_cnt = 0;
+	}
+
+	if (((rxBuf.wrI + BUFFERSIZE - rxBuf.rdI) % BUFFERSIZE) > 0) {
+		//CORE_CriticalDisableIrq();
 		if (!g_uartDMAStarted) {
 			if (rxBuf.wrI > rxBuf.rdI) {
 				g_uartDMATransferNum = rxBuf.wrI - rxBuf.rdI;
 			} else {
 				g_uartDMATransferNum = BUFFERSIZE - rxBuf.rdI;
 			}
+
+			if (g_uartDMATransferNum <= 0)
+				while(1);
 
 			DMA_ActivateBasic(
 				DMA_CHANNEL,
@@ -447,10 +467,16 @@ void CheckUARTTx(void)
 				g_uartDMATransferNum - 1
 				);
 
-			USART_Enable(USART0, usartEnableTx);
 			g_uartDMAStarted = true;
+			USART_Enable(USART0, usartEnableTx);
 		}
+		while (g_uartDMAStarted);
+		CORE_CriticalDisableIrq();
+		rxBuf.pendingBytes -= g_uartDMATransferNum;
 		CORE_CriticalEnableIrq();
+		rxBuf.rdI = (rxBuf.rdI + g_uartDMATransferNum) % BUFFERSIZE;
+		g_uartDMATransferNum = 0;
+		//CORE_CriticalEnableIrq();
 	}
 }
 
@@ -459,11 +485,11 @@ void UART_DMA_callback(unsigned int channel, bool primary, void *user)
 	/*
 	 * update 'rxBuf.rdI' offset
 	 * */
-	rxBuf.rdI = (rxBuf.rdI + g_uartDMATransferNum) % BUFFERSIZE;
-	g_uartDMATransferNum = 0;
+//	rxBuf.rdI = (rxBuf.rdI + g_uartDMATransferNum) % BUFFERSIZE;
+//	g_uartDMATransferNum = 0;
 	g_uartDMAStarted = false;
 
-	TryQuickUART_Tx();
+	//TryQuickUART_Tx();
 
 #if 0
 	if (primary == true)
