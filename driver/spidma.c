@@ -226,7 +226,7 @@ void spiTransferForWrite(SPITransDes_t *spiTransDes, uint8_t *txbuf, int txlen)
 void SPIDMAInit()
 {
 	// Initialize USART1 as SPI slave
-	initUSART1(dwSpiSpeedLow);
+	initUSART1(dwSpiSpeedHigh);
 
 	// Setup LDMA channels for transfer across SPI
 	initReceiveDma();

@@ -180,6 +180,7 @@ int main(void)
 	dwNewReceive(&g_dwDev);
 	dwStartReceive(&g_dwDev);
 
+	timer_init();
 	while (1) {
 		CheckUARTTx();
 
