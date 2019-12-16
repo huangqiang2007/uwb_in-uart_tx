@@ -436,6 +436,14 @@ void CheckUARTTx(void)
 
 	if (rxBuf.pendingBytes == 0) {
 		if (pengdingBytesNull_cnt++ > 100000) {
+			GPIO_PinModeSet(gpioPortC, 13, gpioModePushPull, 1);
+			Delay_ms(2);
+			GPIO_PinModeSet(gpioPortC, 13, gpioModePushPull, 0);
+
+			GPIO_PinModeSet(gpioPortA, 2, gpioModePushPull, 0);
+			Delay_ms(5);
+			GPIO_PinModeSet(gpioPortA, 2, gpioModePushPull, 1);
+
 			dwClearReceiveStatus(&g_dwDev);
 			dwRxSoftReset(&g_dwDev);
 			pengdingBytesNull_cnt = 0;

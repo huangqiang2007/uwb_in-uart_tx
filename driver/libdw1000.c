@@ -1724,7 +1724,7 @@ void dwRecvData(dwDevice_t *dev)
 	/*
 	 * reach here, it indicates this node has received data coming from main node.
 	 * */
-	dwSendData(&g_dwDev, "recv", 4);
+	//dwSendData(&g_dwDev, "recv", 4);
 
 	//Delay_ms(5);
 	dwNewReceive(&g_dwDev);
